@@ -1,0 +1,40 @@
+# pytest + ruff on every push and PR. Must be green (spec: "Tests + CI
+# green on every push"). Network/integration tests are skipped here via
+# `-m "not integration"` — CI stays offline and ~seconds fast, same as
+# A1's fake-backend suite.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest -m "not integration" -q
+
+  # Optional second job: run scripts/validate.py against a tiny committed
+  # fixture and fail if any validation check regresses. Enable once the
+  # pipeline produces real numbers.
+  # validate:
+  #   runs-on: ubuntu-latest
+  #   steps: ...

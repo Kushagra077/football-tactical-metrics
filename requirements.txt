@@ -1,0 +1,19 @@
+# Runtime dependencies. All permissive licenses (BSD / MIT) — no AGPL
+# anywhere, which is why this repo can ship MIT cleanly (unlike A1, whose
+# Ultralytics dependency is AGPL-3.0). Pin before deploying to HF Spaces.
+
+kloppy            # provider adapters (Metrica, SkillCorner). BSD-3. Loaders only.
+pandas            # canonical DataFrame
+numpy
+scipy             # savgol_filter, ConvexHull, Voronoi. BSD.
+shapely           # clip Voronoi cells to the pitch rectangle. BSD.
+pyarrow           # parquet read/write for the cache
+pyyaml            # configs/metrics.yaml
+mplsoccer         # pitch plots. MIT.
+matplotlib
+streamlit         # dashboard (HF Spaces, Streamlit SDK)
+
+# --- dev / CI only (kept here for simplicity; split into
+#     requirements-dev.txt if the Space image gets heavy) ---
+pytest
+ruff

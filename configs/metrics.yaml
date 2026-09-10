@@ -1,0 +1,56 @@
+# configs/metrics.yaml
+# ---------------------------------------------------------------------------
+# EVERY threshold in the project lives here and NOWHERE ELSE.
+# Metric code receives the parsed dict; it must never hardcode a number.
+# ``scripts/validate.py`` sweeps the values marked "SWEPT" to build
+# reports/sensitivity.json.
+# ---------------------------------------------------------------------------
+
+pitch:
+  length_m: 105.0
+  width_m: 68.0
+
+kinematics:
+  # Savitzky-Golay filter applied to position before differencing.
+  savgol_window_frames: 7      # SWEPT — odd int; larger = smoother + more lag
+  savgol_polyorder: 2          # must be < savgol_window_frames
+  max_speed_mps: 12.0          # speeds above this are clipped AND counted
+  max_gap_s: 1.0               # longer absence => treat re-appearance as new sub-track
+
+shape:
+  line_height_n_deepest: 4     # "4 deepest outfield players"
+  min_outfield_players: 8      # below this a frame is flagged (SkillCorner), not dropped
+
+physical:
+  hsr_threshold_mps: 5.5       # high-speed running floor
+  sprint_threshold_mps: 7.0    # SWEPT — sprint speed floor
+  sprint_min_duration_s: 1.0   # must stay above threshold at least this long
+  sprint_min_recovery_s: 1.0   # gap below threshold shorter than this => same sprint
+  # Speed zones tile the axis with no gaps/overlaps; last upper bound is "infinity".
+  speed_zones_mps:
+    - [0.0, 2.0]     # walk
+    - [2.0, 4.0]     # jog
+    - [4.0, 5.5]     # run
+    - [5.5, 7.0]     # high-speed running
+    - [7.0, 99.0]    # sprint
+  # Grids the sensitivity sweep iterates over.
+  sensitivity:
+    savgol_window_frames_grid: [5, 7, 9, 11, 15]
+    sprint_threshold_mps_grid: [6.5, 7.0, 7.5, 8.0]
+
+pressing:
+  press_radius_m: 5.0            # opponent within this of the carrier = "pressing"
+  carrier_search_radius_m: 3.0   # ball-to-player distance to call it possession
+
+space:
+  include_gk: true               # keepers occupy space too
+
+# Published physiological ranges used by reports/validation.json.
+# Cite sources in the report's "references" field.
+physiological_ranges:
+  total_distance_km: [9.0, 12.0]       # per outfield player, full match
+  top_speed_mps: [8.0, 11.0]           # outfield players
+  hsr_share_of_distance_pct: [5.0, 15.0]
+
+cache:
+  target_hz: 5.0                 # downsample rate for data/cache parquet
