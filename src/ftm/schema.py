@@ -101,7 +101,6 @@ class SchemaError(ValueError):
     never reach the metrics layer.
     """
 
-
 def validate(df: pd.DataFrame, *, strict_ranges: bool = True) -> pd.DataFrame:
     """Assert that ``df`` is a valid canonical tracking frame.
 
@@ -158,7 +157,75 @@ def validate(df: pd.DataFrame, *, strict_ranges: bool = True) -> pd.DataFrame:
     SchemaError
         On the first violated rule.
     """
-    raise NotImplementedError
+    df_columns = set(df.columns)
+    original_columns = set(COLUMNS)
+
+    missing = original_columns - df_columns
+    extra = df_columns - original_columns
+
+    if missing:
+        raise SchemaError(f"Here these {list(missing)} are missing.")
+    if extra:
+        raise SchemaError(f"Here these {list(extra)} are extra.")
+
+    df = df[COLUMNS]
+
+    for column in COLUMNS:
+        actual_dtype = str(df[column].dtype)
+        expected_dtype = DTYPES[column]                            
+
+        if actual_dtype != expected_dtype:
+            raise SchemaError(f"Column {column} has {actual_dtype} data type but expected data type was {expected_dtype}")
+
+    if set(df["team"].cat.categories) != set(TEAM_CATEGORIES):
+        raise SchemaError(f"team categories are {set(df['team'].cat.categories)}, expected {set(TEAM_CATEGORIES)}")
+
+    if set(df['ball_state'].cat.categories) != set(BALL_STATE_CATEGORIES):
+        raise SchemaError(f"ball categories are {set(df['ball_state'].cat.categories)}, expected {set(BALL_STATE_CATEGORIES)}")
+
+    for column in df.columns:
+        if column == "jersey_number":
+            continue
+        if df[column].isnull().any():
+            raise SchemaError(f"Ther column {column} contains NULL values but must be fully populated.")
+
+    if not df["period"].isin([1,2]).all():
+        raise SchemaError(f"The column period must contains value from [1,2]")
+
+    if strict_ranges:
+        x_bound = (PITCH_LENGTH_M / 2) + COORD_TOLERANCE_M
+        y_bound = (PITCH_WIDTH_M / 2) + COORD_TOLERANCE_M
+
+        if (df["x_pitch"] < -x_bound).any() or (df['x_pitch'] > x_bound).any():
+            raise SchemaError(f"x_pitch must be within range of -{x_bound} and {x_bound}")
+
+        if (df["y_pitch"] < -y_bound).any() or (df['y_pitch'] > y_bound).any():
+            raise SchemaError(f"y_bound must be within range of -{y_bound} and {y_bound}")
+
+        if df["x_pitch"].between(0, 1).all():
+            raise SchemaError("x_pitch appears normalized to [0,1] — did you forget the coordinate transform?")
+
+    duplicates = df.duplicated(subset=["period", "frame_id", "track_id"])
+    if duplicates.any():
+        n = duplicates.sum()
+        raise SchemaError(
+            f"Found {n} duplicate (period, frame_id, track_id) rows."
+        )
+
+    team_is_ball = df['team'] == 'ball'
+    if not(team_is_ball == df['is_ball']).all():
+        raise SchemaError("team==ball and is_ball flag are inconsistent for some rows.")
+
+    bad_gk = df["is_gk"] & (df["team"] == "ball")
+    if bad_gk.any():
+        raise SchemaError("Found ball rows incorrectly flagged is_gk as True.")
+
+    df_sorted = df.sort_values(["period", "timestamp"])
+    df_sorted = df_sorted.drop_duplicates(["period", "frame_id", "timestamp"])
+    if (0 > df_sorted.groupby("period")["frame_id"].diff()).any():
+        raise SchemaError("Frames must be monotonic within each period.")
+
+    return df
 
 
 def empty_frame() -> pd.DataFrame:
@@ -167,7 +234,16 @@ def empty_frame() -> pd.DataFrame:
     Handy for loaders (start empty, ``concat`` provider rows in) and for
     tests. The result must itself pass ``validate(..., strict_ranges=False)``.
     """
-    raise NotImplementedError
+    columns = {col: pd.Series(dtype=DTYPES[col]) for col in COLUMNS}
+    df = pd.DataFrame(columns)
+
+    team_type = pd.CategoricalDtype(categories=TEAM_CATEGORIES)
+    df["team"] = df["team"].astype(team_type)
+
+    ball_type = pd.CategoricalDtype(categories=BALL_STATE_CATEGORIES)
+    df["ball_state"] = df["ball_state"].astype(ball_type)
+
+    return df
 
 
 def coerce(df: pd.DataFrame) -> pd.DataFrame:
@@ -179,4 +255,15 @@ def coerce(df: pd.DataFrame) -> pd.DataFrame:
     ``validate()``. This does NOT fix semantic problems (bad ranges,
     duplicates) — only dtype presentation.
     """
-    raise NotImplementedError
+    df = df.copy()
+    for column,types in DTYPES.items():
+        if column == "team":
+            team_type = pd.CategoricalDtype(categories=TEAM_CATEGORIES)
+            df[column] = df[column].astype(team_type)
+        elif column == "ball_state":
+            ball_type = pd.CategoricalDtype(categories=BALL_STATE_CATEGORIES)
+            df[column] = df[column].astype(ball_type)
+        else:
+            df[column] = df[column].astype(types)
+
+    return df

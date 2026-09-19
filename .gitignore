@@ -8,6 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+.claude
 
 # Build spec (kept locally, not published)
 B1-tactical-metrics-build-spec.md
