@@ -34,21 +34,7 @@ def make_canonical_frame(
     change only needs fixing here.
     """
 
-    df = pd.DataFrame({
-    'frame_id': [1, 1],
-    'period': [1, 1],
-    'timestamp': [0.0, 0.0],
-    'track_id': ['player_7', 'ball'],
-    'team': ['home', 'ball'],
-    'jersey_number': [7, None],
-    'x_pitch': [10.0, 0.0],
-    'y_pitch': [5.0, 0.0],
-    'is_ball': [False, True],
-    'is_gk': [False, False],
-    'ball_state': ['alive', 'alive'],}
-    )
-
-    return coerce(df)
+    pass
 
 
 def straight_line_track(
