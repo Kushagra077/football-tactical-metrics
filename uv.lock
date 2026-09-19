@@ -432,6 +432,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pytest" },
     { name = "pyyaml" },
+    { name = "ruff" },
     { name = "scipy" },
     { name = "shapely" },
 ]
@@ -456,6 +457,7 @@ requires-dist = [
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pyyaml" },
+    { name = "ruff", specifier = ">=0.16.7" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scipy" },
     { name = "shapely" },

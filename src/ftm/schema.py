@@ -190,7 +190,7 @@ def validate(df: pd.DataFrame, *, strict_ranges: bool = True) -> pd.DataFrame:
             raise SchemaError(f"Ther column {column} contains NULL values but must be fully populated.")
 
     if not df["period"].isin([1,2]).all():
-        raise SchemaError(f"The column period must contains value from [1,2]")
+        raise SchemaError("The column period must contain value from [1,2]")
 
     if strict_ranges:
         x_bound = (PITCH_LENGTH_M / 2) + COORD_TOLERANCE_M
