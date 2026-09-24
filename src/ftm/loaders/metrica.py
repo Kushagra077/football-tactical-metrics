@@ -34,8 +34,11 @@ Then verify before trusting anything downstream::
 from __future__ import annotations
 
 import pandas as pd
+from kloppy import metrica
+from kloppy.domain import Ground, PositionType
 
 from ftm.loaders.base import BaseLoader, MatchMeta
+from ftm.schema import coerce, validate
 
 
 class MetricaLoader(BaseLoader):
@@ -53,7 +56,7 @@ class MetricaLoader(BaseLoader):
         (Later you may filter to just the games whose CSV layout you have
         implemented — start with ["3"].)
         """
-        raise NotImplementedError
+        return list(self.SAMPLE_MATCH_IDS)
 
     def load_meta(self, match_id: str) -> MatchMeta:
         """Build :class:`MatchMeta` from ``dataset.metadata``.
@@ -62,7 +65,33 @@ class MetricaLoader(BaseLoader):
         but read it), ``periods`` from ``metadata.periods``, and team
         names from ``metadata.teams``. ``provider="metrica"``.
         """
-        raise NotImplementedError
+        metadata = self._read_dataset(match_id).metadata
+
+        periods = {
+            period.id: (
+                period.start_timestamp.total_seconds(),
+                period.end_timestamp.total_seconds(),
+            )
+            for period in metadata.periods
+        }
+        home_team = next(t for t in metadata.teams if t.ground == Ground.HOME)
+        away_team = next(t for t in metadata.teams if t.ground == Ground.AWAY)
+        pitch = metadata.pitch_dimensions
+
+        return MatchMeta(
+            match_id=match_id,
+            provider="metrica",
+            frame_rate=float(metadata.frame_rate),
+            pitch_length_m=float(pitch.pitch_length),
+            pitch_width_m=float(pitch.pitch_width),
+            home_team=home_team.name,
+            away_team=away_team.name,
+            periods=periods,
+            notes=(
+                "Metrica Sports sample open data; no license stated by "
+                "Metrica, do not redistribute the raw files."
+            ),
+        )
 
     def load(self, match_id: str) -> pd.DataFrame:
         """Load one Metrica match as the canonical DataFrame.
@@ -90,4 +119,80 @@ class MetricaLoader(BaseLoader):
         summary shows 22 players + 1 ball, ``x_pitch`` spanning ~+/-52.5 m,
         and the frame rate coming from metadata.
         """
-        raise NotImplementedError
+        dataset = self._read_dataset(match_id)
+        metadata = dataset.metadata
+        wide = dataset.to_df()
+
+        team_by_ground = {team.ground: team for team in metadata.teams}
+        player_team: dict[str, str] = {}
+        player_jersey: dict[str, int | None] = {}
+        player_is_gk: dict[str, bool] = {}
+        for ground, team_name in ((Ground.HOME, "home"), (Ground.AWAY, "away")):
+            for player in team_by_ground[ground].players:
+                player_team[player.player_id] = team_name
+                player_jersey[player.player_id] = player.jersey_no
+                player_is_gk[player.player_id] = (
+                    player.starting_position == PositionType.Goalkeeper
+                )
+
+        timestamp = wide["timestamp"].dt.total_seconds()
+
+        # kloppy never populates ball_state for Metrica EPTS data; default
+        # to "dead" per the loader contract (safe direction — only drops
+        # frames from averages).
+        ball_state = wide["ball_state"].fillna("dead")
+
+        frames = [
+            pd.DataFrame(
+                {
+                    "frame_id": wide["frame_id"],
+                    "period": wide["period_id"],
+                    "timestamp": timestamp,
+                    "track_id": "ball",
+                    "team": "ball",
+                    "jersey_number": pd.NA,
+                    "x_pitch": wide["ball_x"],
+                    "y_pitch": wide["ball_y"],
+                    "is_ball": True,
+                    "is_gk": False,
+                    "ball_state": ball_state,
+                }
+            )
+        ]
+
+        for player_id, team in player_team.items():
+            x_col, y_col = f"{player_id}_x", f"{player_id}_y"
+            if x_col not in wide.columns:
+                continue
+            frames.append(
+                pd.DataFrame(
+                    {
+                        "frame_id": wide["frame_id"],
+                        "period": wide["period_id"],
+                        "timestamp": timestamp,
+                        "track_id": player_id,
+                        "team": team,
+                        "jersey_number": player_jersey[player_id],
+                        "x_pitch": wide[x_col],
+                        "y_pitch": wide[y_col],
+                        "is_ball": False,
+                        "is_gk": player_is_gk[player_id],
+                        "ball_state": ball_state,
+                    }
+                )
+            )
+
+        long_df = pd.concat(frames, ignore_index=True)
+        # Rows where the tracker didn't see this track this frame — the
+        # schema forbids null coordinates, so drop rather than fabricate.
+        long_df = long_df.dropna(subset=["x_pitch", "y_pitch"])
+
+        long_df = coerce(long_df)
+        return validate(long_df)
+
+    def _read_dataset(self, match_id: str):
+        dataset = metrica.load_open_data(match_id=int(match_id))
+        return dataset.transform(
+            to_coordinate_system="secondspectrum",
+            to_orientation="STATIC_HOME_AWAY",
+        )
