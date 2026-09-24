@@ -9,9 +9,42 @@ where "source-agnostic" is actually enforced.
 from __future__ import annotations
 
 import abc
+import logging
+import os
+import tempfile
+import time
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+#: Env var that overrides the on-disk data root (default: ``<repo>/data``).
+DATA_DIR_ENV = "FTM_DATA_DIR"
+
+# src/ftm/loaders/base.py -> parents[3] is the repo root in a source checkout.
+_SOURCE_ROOT = Path(__file__).resolve().parents[3]
+
+# A leftover temp file older than this is from a killed download, not a live one.
+_STALE_PART_S = 3600
+
+
+def data_root() -> Path:
+    """Return the data root.
+
+    ``$FTM_DATA_DIR`` if set; else ``<repo>/data`` when running from a source
+    checkout (editable install / ``src`` on the path); else ``./data`` so a
+    regular install never writes into ``site-packages``' parent dirs.
+    """
+    override = os.environ.get(DATA_DIR_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    if (_SOURCE_ROOT / "pyproject.toml").is_file():
+        return _SOURCE_ROOT / "data"
+    return Path.cwd() / "data"
 
 
 @dataclass(frozen=True)
@@ -116,23 +149,97 @@ class BaseLoader(abc.ABC):
 
     # ----- shared helpers subclasses may reuse -------------------------------
 
-    def _download_cached(self, url: str) -> "bytes | str":
-        """Fetch ``url`` once, store it under ``data/raw/<provider>/``.
+    def _download_cached(self, url: str) -> Path:
+        """Fetch ``url`` once into ``data/raw/<provider>/`` and return the local path.
 
-        Return the local file contents (or path). Both loaders pull from
-        remote open-data URLs, so a shared on-disk cache keeps CI and
-        repeated dashboard builds from re-downloading. Keep raw files out
-        of git (``data/`` is gitignored).
+        The cache path mirrors the URL path (``data/raw/<provider>/<url path>``)
+        so two remote files with the same basename (e.g. per-match
+        ``match_data.json``) never collide. The data root resolves relative
+        to the repo, not the CWD, and can be overridden with ``$FTM_DATA_DIR``.
+        Writes go to a temp file in the target directory and are renamed
+        into place, so an interrupted download never leaves a truncated
+        file that later looks cached. ``data/`` is gitignored.
         """
-        raise NotImplementedError
+        parsed = urllib.parse.urlparse(url)
+        rel = urllib.parse.unquote(parsed.path).lstrip("/")
+        parts = [p for p in Path(rel).parts if p not in ("", ".", "..")]
+        if not parts:
+            raise ValueError(f"URL has no file path component: {url!r}")
+        dest = data_root() / "raw" / self.name / Path(*parts)
+        if dest.is_file():
+            return dest
 
-    def _infer_is_gk(self, *args, **kwargs) -> pd.Series:
-        """Derive the ``is_gk`` boolean for each track.
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        for stale in dest.parent.glob(f".{dest.name}.*.part"):
+            try:
+                if time.time() - stale.stat().st_mtime > _STALE_PART_S:
+                    stale.unlink()
+            except OSError:
+                pass
+        logger.info("Downloading %s -> %s", url, dest)
+        fd, tmp_name = tempfile.mkstemp(dir=dest.parent, prefix=f".{dest.name}.", suffix=".part")
+        try:
+            written = 0
+            with os.fdopen(fd, "wb") as out, urllib.request.urlopen(url, timeout=60) as resp:
+                expected = resp.headers.get("Content-Length")
+                while chunk := resp.read(1 << 20):
+                    out.write(chunk)
+                    written += len(chunk)
+            # A dropped connection can end the stream "cleanly"; never cache a short file.
+            if expected is not None and written != int(expected):
+                raise OSError(f"Incomplete download of {url}: got {written} of {expected} bytes")
+            os.chmod(tmp_name, 0o644)
+            os.replace(tmp_name, dest)
+        except BaseException:
+            Path(tmp_name).unlink(missing_ok=True)
+            raise
+        return dest
 
-        Prefer the provider's declared position/role. Fallback heuristic
-        (document it if you use it): the outfield-excluded player who
-        stays closest to their own goal line across the match. A wrong
-        ``is_gk`` shifts defensive line height by ~10 m, so this is worth
-        getting right rather than guessing per frame.
+    def _infer_is_gk(self, df: pd.DataFrame) -> pd.Series:
+        """Heuristic ``is_gk`` for providers that declare no roles.
+
+        Prefer the provider's declared position/role; use this only as a
+        fallback. Rule: per team and period, the goal a team defends is the
+        end its players' mean x sits closest to; the goalkeeper is the one
+        track whose mean x (over the frames it appears in) is nearest that
+        goal line. Deciding per track across the whole period rather than per
+        frame keeps one keeper stable instead of flickering onto whichever
+        defender is deepest at a set piece. Tracks present in <10% of the
+        team's frames that period are not candidates. A wrong ``is_gk``
+        shifts defensive line height by ~10 m.
+
+        Known limitation: exactly one keeper per (period, team), so after a
+        mid-period goalkeeper substitution the replacement is not flagged.
+
+        Parameters
+        ----------
+        df:
+            Long frame with at least ``period``, ``track_id``, ``team``,
+            ``x_pitch``.
+
+        Returns
+        -------
+        pandas.Series
+            Boolean, aligned to ``df.index``. Always False for the ball.
         """
-        raise NotImplementedError
+        is_gk = pd.Series(False, index=df.index, dtype=bool)
+        players = df[df["team"].isin(["home", "away"])]
+        if players.empty:
+            return is_gk
+
+        stats = players.groupby(["period", "team", "track_id"], observed=True)["x_pitch"].agg(
+            ["mean", "size"]
+        )
+        keepers: set[tuple] = set()
+        for _, per_track in stats.groupby(level=["period", "team"]):
+            # Ignore cameo tracks (e.g. late subs) so a brief spell near
+            # the goal line can't outrank the keeper who played throughout.
+            regular = per_track[per_track["size"] >= 0.1 * per_track["size"].max()]
+            mean_x = regular["mean"]
+            # Team centroid below 0 -> defends the -x goal (and vice versa).
+            defends_negative = mean_x.mean() < 0
+            keepers.add(mean_x.idxmin() if defends_negative else mean_x.idxmax())
+
+        key = pd.MultiIndex.from_frame(players[["period", "team", "track_id"]])
+        is_gk.loc[players.index] = key.isin(list(keepers))
+        return is_gk

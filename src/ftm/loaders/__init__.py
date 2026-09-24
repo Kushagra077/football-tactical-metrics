@@ -26,7 +26,7 @@ __all__ = [
 ]
 
 
-def get_loader(name: str) -> "BaseLoader":
+def get_loader(name: str) -> BaseLoader:
     """Return a loader instance for a provider name.
 
     Parameters
@@ -38,7 +38,14 @@ def get_loader(name: str) -> "BaseLoader":
         pipeline, cache builder and dashboard all resolve providers the
         same way — same reason A1 had ``build_backend()``.
     """
-    raise NotImplementedError
+    registry: dict[str, type[BaseLoader]] = {
+        "metrica": MetricaLoader,
+        "skillcorner": SkillCornerLoader,
+    }
+    key = name.strip().lower() if isinstance(name, str) else name
+    if key not in registry:
+        raise KeyError(f"Unknown loader {name!r}; valid names: {sorted(registry)}")
+    return registry[key]()
 
 
 # Re-exports. Import here (not at top) to keep the module importable even
