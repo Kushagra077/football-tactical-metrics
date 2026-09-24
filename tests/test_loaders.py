@@ -42,11 +42,3 @@ def test_metrica_game3_loads_and_validates():
     ``validate``, has 22 players + 1 ball, ``x_pitch`` spanning ~+/-52.5,
     and ``frame_rate`` read from metadata == 25."""
     raise NotImplementedError
-
-
-# @pytest.mark.integration
-def test_skillcorner_match_loads_validates_and_has_coverage_gaps():
-    """(integration, network) A SkillCorner match passes ``validate`` and
-    at least one player has coverage < 100% in a period (proves broadcast
-    drop-out is preserved, not forward-filled)."""
-    raise NotImplementedError
