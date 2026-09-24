@@ -164,30 +164,40 @@ def validate(df: pd.DataFrame, *, strict_ranges: bool = True) -> pd.DataFrame:
     extra = df_columns - original_columns
 
     if missing:
-        raise SchemaError(f"Here these {list(missing)} are missing.")
+        raise SchemaError(f"Missing canonical columns: {sorted(missing)}")
     if extra:
-        raise SchemaError(f"Here these {list(extra)} are extra.")
+        raise SchemaError(f"Unexpected extra columns: {sorted(extra, key=str)}")
 
     df = df[COLUMNS]
 
     for column in COLUMNS:
         actual_dtype = str(df[column].dtype)
-        expected_dtype = DTYPES[column]                            
+        expected_dtype = DTYPES[column]
 
         if actual_dtype != expected_dtype:
-            raise SchemaError(f"Column {column} has {actual_dtype} data type but expected data type was {expected_dtype}")
+            raise SchemaError(
+                f"Column {column} has dtype {actual_dtype}, expected {expected_dtype}"
+            )
 
     if set(df["team"].cat.categories) != set(TEAM_CATEGORIES):
-        raise SchemaError(f"team categories are {set(df['team'].cat.categories)}, expected {set(TEAM_CATEGORIES)}")
+        raise SchemaError(
+            f"team categories are {set(df['team'].cat.categories)}, "
+            f"expected {set(TEAM_CATEGORIES)}"
+        )
 
     if set(df['ball_state'].cat.categories) != set(BALL_STATE_CATEGORIES):
-        raise SchemaError(f"ball categories are {set(df['ball_state'].cat.categories)}, expected {set(BALL_STATE_CATEGORIES)}")
+        raise SchemaError(
+            f"ball_state categories are {set(df['ball_state'].cat.categories)}, "
+            f"expected {set(BALL_STATE_CATEGORIES)}"
+        )
 
     for column in df.columns:
         if column == "jersey_number":
             continue
         if df[column].isnull().any():
-            raise SchemaError(f"Ther column {column} contains NULL values but must be fully populated.")
+            raise SchemaError(
+                f"The column {column} contains NULL values but must be fully populated."
+            )
 
     if not df["period"].isin([1,2]).all():
         raise SchemaError("The column period must contain value from [1,2]")
@@ -200,10 +210,12 @@ def validate(df: pd.DataFrame, *, strict_ranges: bool = True) -> pd.DataFrame:
             raise SchemaError(f"x_pitch must be within range of -{x_bound} and {x_bound}")
 
         if (df["y_pitch"] < -y_bound).any() or (df['y_pitch'] > y_bound).any():
-            raise SchemaError(f"y_bound must be within range of -{y_bound} and {y_bound}")
+            raise SchemaError(f"y_pitch must be within range of -{y_bound} and {y_bound}")
 
-        if df["x_pitch"].between(0, 1).all():
-            raise SchemaError("x_pitch appears normalized to [0,1] — did you forget the coordinate transform?")
+        if len(df) and df["x_pitch"].between(0, 1).all():
+            raise SchemaError(
+                "x_pitch appears normalized to [0,1] — did you forget the coordinate transform?"
+            )
 
     duplicates = df.duplicated(subset=["period", "frame_id", "track_id"])
     if duplicates.any():
