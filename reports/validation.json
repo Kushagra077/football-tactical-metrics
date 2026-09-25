@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-25T01:17:14+00:00",
-  "config_hash": "f0182276697ede05",
+  "generated_at": "2026-09-25T01:27:23+00:00",
+  "config_hash": "f774c5c44b89137a",
   "full_match_rule": "outfield players present in the first and last frame of every period; substitutes are not range-checked",
   "synthetic": [
     {
@@ -594,6 +594,24 @@
       "pass": true
     },
     {
+      "match": "metrica/1",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 906.9583,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 951.3486,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_15",
@@ -1062,6 +1080,24 @@
       "pass": true
     },
     {
+      "match": "metrica/2",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 884.4399,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 862.4555,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3570",
@@ -1276,6 +1312,24 @@
       "high": 11.0,
       "pass": true,
       "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/3",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 953.7875,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 1032.0371,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
     }
   ],
   "excluded": [
@@ -1295,50 +1349,7 @@
       "reason": "physical (distance/HSR/sprints) not reported for provider='skillcorner': broadcast tracking is not comparable to full-pitch optical tracking."
     }
   ],
-  "not_checked": [
-    {
-      "match": "metrica/1",
-      "metric": "team_compactness_median_m2",
-      "team": "away",
-      "value": 906.9583,
-      "reason": "no physiological_ranges.team_compactness_m2 in config"
-    },
-    {
-      "match": "metrica/1",
-      "metric": "team_compactness_median_m2",
-      "team": "home",
-      "value": 951.3486,
-      "reason": "no physiological_ranges.team_compactness_m2 in config"
-    },
-    {
-      "match": "metrica/2",
-      "metric": "team_compactness_median_m2",
-      "team": "away",
-      "value": 884.4399,
-      "reason": "no physiological_ranges.team_compactness_m2 in config"
-    },
-    {
-      "match": "metrica/2",
-      "metric": "team_compactness_median_m2",
-      "team": "home",
-      "value": 862.4555,
-      "reason": "no physiological_ranges.team_compactness_m2 in config"
-    },
-    {
-      "match": "metrica/3",
-      "metric": "team_compactness_median_m2",
-      "team": "away",
-      "value": 953.7875,
-      "reason": "no physiological_ranges.team_compactness_m2 in config"
-    },
-    {
-      "match": "metrica/3",
-      "metric": "team_compactness_median_m2",
-      "team": "home",
-      "value": 1032.0371,
-      "reason": "no physiological_ranges.team_compactness_m2 in config"
-    }
-  ],
+  "not_checked": [],
   "coverage": [
     {
       "provider": "metrica",
@@ -1397,8 +1408,8 @@
     }
   ],
   "summary": {
-    "n_checks": 139,
-    "n_pass": 109,
+    "n_checks": 145,
+    "n_pass": 115,
     "n_fail": 30,
     "synthetic_all_pass": true,
     "physiological_all_pass": false,

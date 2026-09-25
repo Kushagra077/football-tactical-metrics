@@ -51,6 +51,7 @@ physiological_ranges:
   total_distance_km: [9.0, 12.0]       # per outfield player, full match
   top_speed_mps: [8.0, 11.0]           # outfield players
   hsr_share_of_distance_pct: [5.0, 15.0]
+  team_compactness_m2: [300.0, 1500.0] # team convex-hull area, per-frame median
 
 cache:
   target_hz: 5.0                 # downsample rate for data/cache parquet

@@ -107,8 +107,11 @@ def test_physiological_checks_skip_skillcorner_distance(cfg, cache_dir):
     assert {e["match"] for e in excluded} == {"skillcorner/s1"}
     assert any(e["metric"] == "total_distance_km" for e in excluded)
     assert all("not reported" in e["reason"] for e in excluded)
-    # config has no compactness band -> reported, not checked
-    assert {n["metric"] for n in not_checked} == {"team_compactness_median_m2"}
+    # config now has a compactness band (DD-027/configs/metrics.yaml), so nothing
+    # is skipped for lacking one; the fixture's runners move in a straight line
+    # (x and y both affine in the runner index), so their hull is degenerate and
+    # the check itself comes back with a None value -> forced fail, not skipped.
+    assert not_checked == []
 
 
 def test_physiological_pass_flag_matches_band(cfg, cache_dir):
@@ -117,6 +120,11 @@ def test_physiological_pass_flag_matches_band(cfg, cache_dir):
     assert {"total_distance_km", "top_speed_mps", "hsr_share_of_distance_pct",
             "gk_top_speed_mps"} <= metrics
     for c in checks:
+        if c["value"] is None:
+            # NaN collapsed to None (e.g. a degenerate convex hull) can never
+            # pass, regardless of the configured band.
+            assert c["pass"] is False
+            continue
         in_band = (c["low"] is None or c["value"] >= c["low"]) and (
             c["high"] is None or c["value"] <= c["high"])
         assert c["pass"] == in_band
