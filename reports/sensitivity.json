@@ -1,0 +1,207 @@
+{
+  "generated_at": "2026-09-25T01:17:18+00:00",
+  "config_hash": "f0182276697ede05",
+  "match": "metrica/1",
+  "frame_rate_hz": 5.0,
+  "grids": {
+    "savgol_window_frames": [
+      5,
+      7,
+      9,
+      11,
+      15
+    ],
+    "sprint_threshold_mps": [
+      6.5,
+      7.0,
+      7.5,
+      8.0
+    ]
+  },
+  "fixed_params": {
+    "savgol_polyorder": 2,
+    "sprint_min_duration_s": 1.0,
+    "sprint_min_recovery_s": 1.0,
+    "hsr_threshold_mps": 5.5
+  },
+  "sprint_count": [
+    {
+      "window": 5,
+      "threshold": 6.5,
+      "total": 323,
+      "per_player_mean": 11.5357
+    },
+    {
+      "window": 5,
+      "threshold": 7.0,
+      "total": 198,
+      "per_player_mean": 7.0714
+    },
+    {
+      "window": 5,
+      "threshold": 7.5,
+      "total": 110,
+      "per_player_mean": 3.9286
+    },
+    {
+      "window": 5,
+      "threshold": 8.0,
+      "total": 42,
+      "per_player_mean": 1.5
+    },
+    {
+      "window": 7,
+      "threshold": 6.5,
+      "total": 310,
+      "per_player_mean": 11.0714
+    },
+    {
+      "window": 7,
+      "threshold": 7.0,
+      "total": 193,
+      "per_player_mean": 6.8929
+    },
+    {
+      "window": 7,
+      "threshold": 7.5,
+      "total": 107,
+      "per_player_mean": 3.8214
+    },
+    {
+      "window": 7,
+      "threshold": 8.0,
+      "total": 39,
+      "per_player_mean": 1.3929
+    },
+    {
+      "window": 9,
+      "threshold": 6.5,
+      "total": 290,
+      "per_player_mean": 10.3571
+    },
+    {
+      "window": 9,
+      "threshold": 7.0,
+      "total": 177,
+      "per_player_mean": 6.3214
+    },
+    {
+      "window": 9,
+      "threshold": 7.5,
+      "total": 97,
+      "per_player_mean": 3.4643
+    },
+    {
+      "window": 9,
+      "threshold": 8.0,
+      "total": 33,
+      "per_player_mean": 1.1786
+    },
+    {
+      "window": 11,
+      "threshold": 6.5,
+      "total": 271,
+      "per_player_mean": 9.6786
+    },
+    {
+      "window": 11,
+      "threshold": 7.0,
+      "total": 166,
+      "per_player_mean": 5.9286
+    },
+    {
+      "window": 11,
+      "threshold": 7.5,
+      "total": 87,
+      "per_player_mean": 3.1071
+    },
+    {
+      "window": 11,
+      "threshold": 8.0,
+      "total": 30,
+      "per_player_mean": 1.0714
+    },
+    {
+      "window": 15,
+      "threshold": 6.5,
+      "total": 236,
+      "per_player_mean": 8.4286
+    },
+    {
+      "window": 15,
+      "threshold": 7.0,
+      "total": 139,
+      "per_player_mean": 4.9643
+    },
+    {
+      "window": 15,
+      "threshold": 7.5,
+      "total": 64,
+      "per_player_mean": 2.2857
+    },
+    {
+      "window": 15,
+      "threshold": 8.0,
+      "total": 23,
+      "per_player_mean": 0.8214
+    }
+  ],
+  "distance_vs_window": [
+    {
+      "window": 5,
+      "n_players": 14,
+      "mean_km": 10.3998,
+      "mean_hsr_km": 0.7631,
+      "n_clipped": 18
+    },
+    {
+      "window": 7,
+      "n_players": 14,
+      "mean_km": 10.335,
+      "mean_hsr_km": 0.7374,
+      "n_clipped": 16
+    },
+    {
+      "window": 9,
+      "n_players": 14,
+      "mean_km": 10.2588,
+      "mean_hsr_km": 0.7066,
+      "n_clipped": 15
+    },
+    {
+      "window": 11,
+      "n_players": 14,
+      "mean_km": 10.1723,
+      "mean_hsr_km": 0.6729,
+      "n_clipped": 17
+    },
+    {
+      "window": 15,
+      "n_players": 14,
+      "mean_km": 9.9769,
+      "mean_hsr_km": 0.6029,
+      "n_clipped": 19
+    }
+  ],
+  "headline": {
+    "metric": "sprint_count",
+    "spread_pct": 169.4915,
+    "threshold_only_spread_pct": 145.1977,
+    "window_only_spread_pct": 33.3333,
+    "distance_spread_pct": 4.1223,
+    "spread_pct_vs_config_default": 155.4404,
+    "config_default_params": {
+      "savgol_window_frames": 7,
+      "sprint_threshold_mps": 7.0
+    },
+    "baseline_params": {
+      "savgol_window_frames": 9,
+      "sprint_threshold_mps": 7.0,
+      "total_sprints": 177
+    },
+    "sentence": "Sprint count varies by 169% across defensible parameter choices (Savitzky-Golay window 5-15 frames at 5 Hz, sprint threshold 6.5-8 m/s; 145% from the threshold alone), so I report the parameters alongside the number."
+  },
+  "figures": [
+    "reports/figures/sensitivity_heatmap.png"
+  ]
+}
