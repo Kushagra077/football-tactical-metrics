@@ -243,7 +243,7 @@ def run_match(
     if provider_key in REFUSED_PROVIDERS:
         physical_df = pd.DataFrame(
             columns=["track_id", "team", "distance_m", "hsr_distance_m", "n_sprints"]
-        )
+        )  # provider/match_id added below, same as the non-empty branch
         physical_note = (
             f"physical (distance/HSR/sprints) not reported for provider={provider_key!r}: "
             "broadcast tracking is not comparable to full-pitch optical tracking."
@@ -276,6 +276,11 @@ def run_match(
         physical_note = ""
 
     _, coverage_per_match = coverage_table(df)
+    # provider/match_id are only implicit in the filename otherwise; a report or
+    # dashboard combining coverage/physical across many cached matches needs them
+    # as real columns, not something parsed back out of a path.
+    coverage_per_match = coverage_per_match.assign(provider=provider_key, match_id=str(match_id))
+    physical_df = physical_df.assign(provider=provider_key, match_id=str(match_id))
 
     prefix = f"{provider_key}__{match_id}__"
     paths = MatchArtifacts(

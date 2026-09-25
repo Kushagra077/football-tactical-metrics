@@ -134,7 +134,13 @@ def test_run_match_writes_every_artifact(tmp_path, monkeypatch):
     assert set(tracking.loc[~tracking["is_ball"], "frame_id"].unique()) == set(range(0, 130, 5))
 
     physical = pd.read_parquet(artifacts.physical)
-    assert set(physical.columns) >= {"track_id", "team", "distance_m", "hsr_distance_m"}
+    assert set(physical.columns) >= {
+        "track_id", "team", "distance_m", "hsr_distance_m", "provider", "match_id",
+    }
+    assert (physical["provider"] == "fake").all()
+
+    coverage = pd.read_parquet(artifacts.coverage)
+    assert set(coverage.columns) >= {"track_id", "team", "coverage_pct", "provider", "match_id"}
 
     space_team = pd.read_parquet(artifacts.space)
     totals = space_team.groupby(["period", "frame_id"])["area_m2"].sum()
@@ -156,7 +162,8 @@ def test_run_match_refuses_physical_for_skillcorner(tmp_path, monkeypatch):
     )
     artifacts = pipeline.run_match("skillcorner", "m1", cfg)
     physical = pd.read_parquet(artifacts.physical)
-    assert physical.empty
+    assert len(physical) == 0
+    assert set(physical.columns) >= {"provider", "match_id"}
 
     meta = json.loads(artifacts.meta.read_text())
     assert "not reported" in meta["physical_note"]
