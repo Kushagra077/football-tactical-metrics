@@ -20,10 +20,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 
 import ftm.metrics
 from ftm.loaders import BaseLoader, MetricaLoader, SkillCornerLoader, get_loader
 from ftm.loaders.metrica import derive_ball_state, sanitize_epts_lines, sanitize_metrica_csv
+from tests.conftest import METRICS_YAML, flat_back_four
 
 FORBIDDEN_IMPORTS = ("kloppy", "ftm.loaders", "ftm.kinematics")
 
@@ -50,7 +52,51 @@ def test_fake_loader_output_passes_schema_and_every_metric():
     ``physical`` with no code under ``ftm/metrics`` knowing which
     'provider' it came from. This is the executable form of the
     source-agnostic rule."""
-    raise NotImplementedError
+    from ftm.kinematics import KinematicsConfig, add_kinematics
+    from ftm.metrics import pressing, shape, space
+    from ftm.metrics.physical import detect_sprints, distance_covered, high_speed_running
+    from ftm.schema import validate
+
+    with METRICS_YAML.open() as fh:
+        cfg = yaml.safe_load(fh)
+
+    frame_rate = 25.0
+    df = flat_back_four(x_line=-30.0)
+    df = validate(df)
+
+    kin_cfg = KinematicsConfig.from_metrics_cfg(cfg, frame_rate)
+    kin, clip = add_kinematics(df, kin_cfg)
+    assert clip.n_total == (~kin["is_ball"]).sum()
+
+    shape_out = shape.compute_all(kin, cfg)
+    assert not shape_out.empty
+
+    pressing_out = pressing.compute_all(kin, cfg)
+    assert set(pressing_out["period"]) == {1}
+
+    team_space, player_space = space.team_space_control(kin, cfg)
+    assert team_space["area_m2"].sum() == pytest.approx(
+        cfg["pitch"]["length_m"] * cfg["pitch"]["width_m"], rel=1e-6
+    )
+    assert not player_space.empty
+
+    per_period, per_match = distance_covered(kin, provider="fake-provider")
+    assert set(per_period["track_id"]) <= set(per_match["track_id"])
+    hsr = high_speed_running(
+        kin, threshold_mps=cfg["physical"]["hsr_threshold_mps"], provider="fake-provider"
+    )
+    assert (hsr["hsr_distance_m"] >= 0).all()
+    sprints = detect_sprints(
+        kin,
+        threshold_mps=cfg["physical"]["sprint_threshold_mps"],
+        min_duration_s=cfg["physical"]["sprint_min_duration_s"],
+        min_recovery_s=cfg["physical"]["sprint_min_recovery_s"],
+        frame_rate=frame_rate,
+    )
+    assert list(sprints.columns) == [
+        "track_id", "team", "period", "start_ts", "end_ts", "duration_s",
+        "peak_speed_mps", "mean_speed_mps", "distance_m",
+    ]
 
 
 def _imported_modules(tree: ast.Module, module_name: str) -> set[str]:

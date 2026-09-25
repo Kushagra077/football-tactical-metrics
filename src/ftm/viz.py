@@ -22,6 +22,7 @@ from matplotlib.patches import Polygon as MplPolygon
 from mplsoccer import Pitch
 from shapely import wkt as shapely_wkt
 
+from ftm.metrics.physical import sprint_spread_pct
 from ftm.schema import PITCH_LENGTH_M, PITCH_WIDTH_M
 
 TEAM_COLORS: dict[str, str] = {"home": "#d62728", "away": "#1f77b4", "ball": "#111111"}
@@ -226,8 +227,10 @@ def sensitivity_heatmap(grid: pd.DataFrame) -> Figure:
     ``grid`` is ``metrics.physical.count_sprints_grid`` output (columns
     savgol_window_frames, sprint_threshold_mps, total_sprints, ...).
     Rows = Savitzky-Golay window, columns = sprint threshold. Each cell is
-    annotated with its count; the title carries the headline spread,
-    ``(max - min) / median * 100`` over all ``total_sprints`` cells.
+    annotated with its count; the title carries the headline spread from
+    ``metrics.physical.sprint_spread_pct`` (the same number the sensitivity
+    report writes), so the figure and ``reports/sensitivity.json`` never
+    disagree.
     """
     table = grid.pivot_table(
         index="savgol_window_frames", columns="sprint_threshold_mps",
@@ -255,9 +258,12 @@ def sensitivity_heatmap(grid: pd.DataFrame) -> Figure:
                     j, i, f"{v:g}", ha="center", va="center", fontsize=10,
                     color="black" if v > mid else "white",
                 )
-        median = float(np.median(finite))
-        spread = (hi - lo) / median * 100 if median else float("nan")
-        ax.set_title(f"Total sprints across settings: {spread:.0f}% spread")
+        try:
+            spread = sprint_spread_pct(grid)
+        except ValueError:
+            ax.set_title(f"Total sprints across settings: {lo:g}-{hi:g}")
+        else:
+            ax.set_title(f"Total sprints across settings: {spread:.0f}% spread")
     else:
         ax.set_title("Total sprints across settings")
 

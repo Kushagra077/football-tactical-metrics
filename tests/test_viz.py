@@ -12,6 +12,7 @@ from matplotlib.figure import Figure  # noqa: E402
 from shapely.geometry import box  # noqa: E402
 
 from ftm import viz  # noqa: E402
+from ftm.metrics.physical import sprint_spread_pct  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -143,8 +144,7 @@ def test_sensitivity_heatmap_annotates_cells_and_spread():
     assert len(fig.axes) == 2  # heatmap + colorbar
     ax = fig.axes[0]
     assert len(ax.texts) == 20
-    vals = grid["total_sprints"]
-    expected = (vals.max() - vals.min()) / vals.median() * 100
+    expected = sprint_spread_pct(grid)
     assert f"{expected:.0f}% spread" in ax.get_title()
 
 
