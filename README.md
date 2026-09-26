@@ -216,8 +216,10 @@ players who weren't on the pitch, not players the tracker lost.
 coordinates, in runs of up to about 12 s, even across teams. It looks like the
 tracker merged them while one hid the other. The merged players are right next
 to each other, so it moves anyone's distance by at most about 1%. It's noted,
-not corrected: splitting them again would mean inventing positions. SkillCorner tracks from the TV broadcast, so players
-drop out whenever the camera isn't on them:
+not corrected: splitting them again would mean inventing positions.
+
+SkillCorner tracks from the TV broadcast, so players drop out whenever the
+camera isn't on them:
 
 ![SkillCorner broadcast frame](docs/images/pitch_skillcorner.png)
 

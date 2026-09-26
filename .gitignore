@@ -37,3 +37,6 @@ reports/figures/*.png
 
 # /brag launch-video workspace (render output + composition)
 brag-output/
+
+# macOS Finder metadata
+.DS_Store
