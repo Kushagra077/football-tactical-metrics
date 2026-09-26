@@ -9,9 +9,18 @@ far and how fast each player ran), checks those numbers against known answers,
 and shows how much they move when the settings change.
 
 Two data providers go through **one schema** and **one metrics layer**. The
-metrics code never knows which provider a frame came from.
+metrics code never knows which provider a frame came from: even whether a
+player's distance is reported is decided by how much of the match they were
+tracked, not by where the data came from.
 
-![Dashboard](docs/images/dashboard.png)
+![Dashboard demo](docs/images/dashboard.gif)
+
+**No hosted demo, on purpose.** The dashboard only views precomputed files;
+there's no model or live computation behind it, so the recording above and the
+[run-it-locally](#running-it-locally) steps show everything a link would. A
+hosted copy would also need the cache online, and the cache holds Metrica's
+player positions (thinned to 5 per second), which would redistribute data this
+repo promises not to (see §7).
 
 ---
 
@@ -47,6 +56,13 @@ Shape and space metrics are computed only while the ball is in play. Frames
 where a team has fewer than 8 visible outfield players are **flagged, not
 dropped** (this happens with broadcast data).
 
+**Coverage rule.** Distance, HSR and sprints are reported only for players
+tracked in **at least 95% of the match's frames** (`physical.min_coverage_pct`).
+Below that, a total is an undercount that looks like a real number, whether
+the gaps come from a TV camera looking elsewhere, a substitution or any future
+tracking source. Those players keep their row, with the values left empty and
+a `below_coverage` flag.
+
 **How speed is computed.** Positions are smoothed with a Savitzky-Golay filter
 and then differentiated, at the provider's native frame rate. Before
 smoothing, any frame-to-frame jump faster than 12 m/s is treated as a tracking
@@ -81,7 +97,8 @@ is known exactly.
 | 5 m/s with a 5 m one-frame spike | top speed (spike rejected) | 5.0 | 5.0 |
 | Flat back four at x = −30 m | line height / width / hull area | −30 / 40 / 908 | −30 / 40 / 908 |
 | Voronoi, 22 players | total area / home share | 7140 m² / 0.5 | 7140 m² / 0.5 |
-| SkillCorner physical metrics | refused (see §5) | raises | raises |
+| Unknown provider "track_a", tracked 40% of the time | physical metrics refused | refused | refused |
+| Same match, fully tracked player | distance reported | 50.0 m | 50.0 m |
 
 **Physiological ranges.** These cover players who played the full match
 (present in the first and last frame of every period) across the 3 Metrica
@@ -113,8 +130,12 @@ What the failures mean:
 
 ## 4 · Sensitivity: the honest result
 
-> **Sprint count varies by 143% across defensible parameter choices, so I
-> report the parameters alongside the number.**
+> **Smoothing barely matters: across every smoothing window tested, sprint
+> count moves 9% and distance 1%. The sprint speed threshold moves it 138%.**
+> So when two sources disagree on sprint numbers, the disagreement comes from
+> how a sprint is *defined*, not how speed is *computed*, which is why I
+> report the definition alongside the number. (Across the whole grid the
+> spread is 143%.)
 
 ![Sprint count heatmap](docs/images/sensitivity_heatmap.png)
 
@@ -126,14 +147,13 @@ grid ranges from 37 to 312, a spread of 143% of the default.*
 
 | What changes | Spread |
 |---|---:|
-| Sprint threshold alone (6.5 → 8.0 m/s) | 138% |
 | Smoothing window alone (11 → 31 frames) | 9% |
-| Both | **143%** |
 | Total distance, across windows | 1% |
+| **Sprint threshold alone (6.5 → 8.0 m/s)** | **138%** |
+| Both together | 143% |
 
-Distance is robust. Sprint count is not: it depends almost entirely on where
-you draw the speed line. That is why a sprint count published without its
-threshold cannot be compared with another. Full grid:
+The computation is robust; the definition is not. A sprint count published
+without its threshold can't be compared with another. Full grid:
 [`reports/sensitivity.json`](reports/sensitivity.json).
 
 ## 5 · Coverage: Metrica vs SkillCorner
@@ -157,12 +177,12 @@ drop out whenever the camera isn't on them:
 *SkillCorner, first half, 01:28. Only the 20 players in the camera's view
 exist in this frame.*
 
-**Because of this, distance, HSR and sprints are not reported for
-SkillCorner.** The physical metrics raise an error for that provider, and the
-dashboard shows "n/a (broadcast)". A total built from 40% of the match would
-look like a real number but wouldn't be one. Shape, space and pressing are
-still computed. The dashboard shows coverage beside every physical value, so a
-low-coverage total always reads as an undercount.
+**Because of this, no SkillCorner player gets distance, HSR or sprints.** Not
+because the code knows it's SkillCorner, but because no broadcast track
+reaches the 95% coverage rule (§2); the best-tracked player is seen about 80%
+of the time. The dashboard shows "n/a (low coverage)" for them, and for Metrica
+substitutes, who are below 95% for the same honest reason. Shape, space and
+pressing are still computed for every match.
 
 ![Per-player table](docs/images/players_table.png)
 
@@ -186,7 +206,10 @@ low-coverage total always reads as an undercount.
 Loaders ([`src/ftm/loaders/`](src/ftm/loaders/)) turn each provider's format
 into this frame through [kloppy](https://kloppy.pysport.org/). Nothing under
 [`src/ftm/metrics/`](src/ftm/metrics/) imports kloppy or a loader, and a test
-enforces that. Adding SkillCorner changed no metric code.
+enforces that. The frame has no provider column, and no metric takes a
+provider argument: which physical numbers get reported is decided by tracking
+coverage alone. A test runs a made-up provider ("track_a") through the
+pipeline to prove it gets the same rule.
 
 A future tracking pipeline built from video (Track A) that emits a DataFrame
 passing `validate()` will run through every metric here unchanged. This is the

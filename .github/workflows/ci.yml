@@ -1,7 +1,5 @@
-# pytest + ruff on every push and PR. Must be green (spec: "Tests + CI
-# green on every push"). Network/integration tests are skipped here via
-# `-m "not integration"` — CI stays offline and ~seconds fast, same as
-# A1's fake-backend suite.
+# pytest + ruff on every push and PR. Network/integration tests are skipped
+# via `-m "not integration"`, so CI stays offline and runs in seconds.
 
 name: CI
 
@@ -30,10 +28,3 @@ jobs:
 
       - name: Test
         run: uv run pytest -m "not integration" -q
-
-  # Optional second job: run scripts/validate.py against a tiny committed
-  # fixture and fail if any validation check regresses. Enable once the
-  # pipeline produces real numbers.
-  # validate:
-  #   runs-on: ubuntu-latest
-  #   steps: ...

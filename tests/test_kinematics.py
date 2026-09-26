@@ -1,6 +1,6 @@
 """Synthetic-trajectory tests for ``ftm.kinematics``.
 
-Spec step 2: these are the only cheap way to know the physical metrics
+These are the only cheap way to know the physical metrics
 are right. CI runs them on every push. The noisy-stationary test is the
 important one — it is the difference between measuring player movement
 and measuring tracking noise, and it is exactly the failure that makes
@@ -81,8 +81,8 @@ def test_dt_comes_from_frame_rate_not_hardcoded(metrics_cfg):
     """Same synthetic path sampled at 10 Hz and at 25 Hz yields the same
     total distance (proves ``dt = 1 / frame_rate`` is honoured, not a
     hardcoded 0.04). Radius/speed are chosen so the revolution period is
-    long relative to the smoothing window at BOTH rates (DD-030 widened
-    the default window to 21 frames; at 10 Hz that is 2.1 s, large enough
+    long relative to the smoothing window at BOTH rates (the default
+    window is 21 frames; at 10 Hz that is 2.1 s, large enough
     relative to a fast lap to bias the two rates apart by more than the
     old 1% tolerance for its own sake, not because dt is wrong)."""
     dists = {}

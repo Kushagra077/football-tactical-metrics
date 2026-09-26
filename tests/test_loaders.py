@@ -80,10 +80,10 @@ def test_fake_loader_output_passes_schema_and_every_metric():
     )
     assert not player_space.empty
 
-    per_period, per_match = distance_covered(kin, provider="fake-provider")
+    per_period, per_match = distance_covered(kin)
     assert set(per_period["track_id"]) <= set(per_match["track_id"])
     hsr = high_speed_running(
-        kin, threshold_mps=cfg["physical"]["hsr_threshold_mps"], provider="fake-provider"
+        kin, threshold_mps=cfg["physical"]["hsr_threshold_mps"]
     )
     assert (hsr["hsr_distance_m"] >= 0).all()
     sprints = detect_sprints(

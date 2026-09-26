@@ -1,7 +1,6 @@
 """Precompute every match into tidy parquet under ``data/cache/``.
 
-Run once locally (and in the HF Space build, or ship the parquet). The
-Streamlit app then only ever READS these files.
+Run once locally. The Streamlit app then only ever READS these files.
 
     python -m scripts.build_cache --config configs/metrics.yaml \
         --cache-dir data/cache --target-hz 5

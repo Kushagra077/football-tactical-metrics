@@ -1,7 +1,6 @@
 """Known-answer tests for ``ftm.metrics.space`` using hand-placed data.
 
-Trivial to write, and they catch sign errors that a plot happily hides
-(spec step 3).
+Trivial to write, and they catch sign errors that a plot happily hides.
 """
 
 from __future__ import annotations

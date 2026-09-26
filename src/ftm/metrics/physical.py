@@ -14,13 +14,12 @@ from ``metrics.yaml``:
       sprint_min_recovery_s: 1.0     # gap required between two sprints
       speed_zones_mps: [[0,2],[2,4],[4,5.5],[5.5,7.0],[7.0,99]]
 
-IMPORTANT (spec step 5): do NOT report distance-covered metrics for
-SkillCorner players — broadcast tracking makes them non-comparable to
-Metrica, and an analyst reading the repo will spot it instantly. The
-provider gate lives in ``pipeline.py`` / the report writer, but keep
-these functions honest by accepting a ``provider`` arg and refusing:
-``distance_covered``, ``speed_zones`` and ``high_speed_running`` raise
-``ValueError`` for ``provider="skillcorner"`` (case-insensitive).
+Nothing here knows which provider a frame came from. Whether a player's
+totals are reported is decided by tracking coverage instead
+(:func:`apply_coverage_rule`, ``physical.min_coverage_pct``): a distance
+built from a track seen for 40% of the match is an undercount that looks
+like a real number, whether the gaps come from a broadcast camera, a
+substitution or any future tracking source.
 
 Filters applied by every function here: ball rows (``is_ball``) are
 dropped; goalkeepers and dead-ball frames are kept (a player runs whether
@@ -33,7 +32,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-REFUSED_PROVIDERS = frozenset({"skillcorner"})
+PHYSICAL_METRIC_COLUMNS = ["distance_m", "hsr_distance_m", "n_sprints"]
 
 SPRINT_COLUMNS = [
     "track_id",
@@ -53,15 +52,6 @@ GRID_COLUMNS = [
     "total_sprints",
     "sprints_per_player_mean",
 ]
-
-
-def _refuse_if_broadcast(provider: str, metric: str) -> None:
-    if provider.strip().lower() in REFUSED_PROVIDERS:
-        raise ValueError(
-            f"{metric} is not reported for provider={provider!r}: broadcast tracking only "
-            "sees players in camera view, so distance-based metrics are not comparable to "
-            "full-pitch optical tracking (e.g. Metrica)."
-        )
 
 
 def _players(df_with_kin: pd.DataFrame) -> pd.DataFrame:
@@ -86,15 +76,10 @@ def _sum_by(df: pd.DataFrame, keys: list[str], value: pd.Series, name: str) -> p
     )
 
 
-def distance_covered(
-    df_with_kin: pd.DataFrame,
-    *,
-    provider: str,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+def distance_covered(df_with_kin: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Total distance per player, per period and for the whole input.
 
-    Distance is the sum of ``step_dist`` (m). Raises ``ValueError`` when
-    ``provider`` is ``"skillcorner"`` (any case) — see module note.
+    Distance is the sum of ``step_dist`` (m).
 
     Returns a tuple ``(per_period, per_match)``:
 
@@ -102,9 +87,9 @@ def distance_covered(
       player per period they appear in.
     * ``per_match``: (track_id, team, distance_m), the sum over periods.
 
-    Gate (spec step 4): Metrica full-match per-player totals in 9–12 km.
+    Sanity band: full-match outfield totals of roughly 9-12 km
+    (``physiological_ranges.total_distance_km``).
     """
-    _refuse_if_broadcast(provider, "distance_covered")
     players = _players(df_with_kin)
     per_period = _sum_by(
         players, ["track_id", "team", "period"], players["step_dist"], "distance_m"
@@ -123,7 +108,6 @@ def speed_zones(
     df_with_kin: pd.DataFrame,
     *,
     zones_mps: list[tuple[float, float]],
-    provider: str,
 ) -> pd.DataFrame:
     """Distance per player in each speed band.
 
@@ -133,13 +117,11 @@ def speed_zones(
     zone distances sum to ``distance_covered``. Binning is done here
     rather than via ``ftm.kinematics`` because metrics may only import
     ``ftm.schema``. Labels come from :func:`zone_label` (e.g. ``"0-2"``,
-    ``"2-4"``, ``"4-5.5"``, ``"5.5-7"``, ``"7+"``). Raises ``ValueError``
-    for SkillCorner (any case).
+    ``"2-4"``, ``"4-5.5"``, ``"5.5-7"``, ``"7+"``).
 
     Returns: (track_id, team, zone_label, distance_m), every zone present
     for every player (0.0 when unused), rows ordered by player then zone.
     """
-    _refuse_if_broadcast(provider, "speed_zones")
     zones = [(float(lo), float(hi)) for lo, hi in zones_mps]
     if not zones:
         raise ValueError("zones_mps must contain at least one band")
@@ -175,14 +157,12 @@ def high_speed_running(
     df_with_kin: pd.DataFrame,
     *,
     threshold_mps: float,
-    provider: str,
 ) -> pd.DataFrame:
     """Distance covered at ``speed >= threshold_mps`` (default 5.5) per player.
 
     Returns: (track_id, team, hsr_distance_m); players who never reach the
-    threshold get 0.0. Raises ``ValueError`` for SkillCorner (any case).
+    threshold get 0.0.
     """
-    _refuse_if_broadcast(provider, "high_speed_running")
     players = _players(df_with_kin)
     fast = players["step_dist"].where(players["speed"] >= threshold_mps, 0.0)
     return _sum_by(players, ["track_id", "team"], fast, "hsr_distance_m")
@@ -285,6 +265,40 @@ def sprint_count(sprints: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def apply_coverage_rule(
+    physical: pd.DataFrame,
+    coverage: pd.DataFrame,
+    *,
+    min_coverage_pct: float,
+) -> pd.DataFrame:
+    """Blank the physical metrics of tracks with too little coverage.
+
+    ``physical`` has one row per (track_id, team) with the
+    :data:`PHYSICAL_METRIC_COLUMNS`; ``coverage`` is (track_id, team,
+    coverage_pct), e.g. ``pipeline.coverage_table``'s per-match frame. A
+    track below ``min_coverage_pct`` keeps its row, but its distance, HSR
+    and sprint count become missing (NaN / ``<NA>``), and
+    ``below_coverage`` is True. Tracks absent from ``coverage`` count as
+    0% covered.
+
+    Returns ``physical`` plus ``coverage_pct`` and ``below_coverage``;
+    ``n_sprints`` becomes a nullable ``Int64``.
+    """
+    missing = set(PHYSICAL_METRIC_COLUMNS) - set(physical.columns)
+    if missing:
+        raise KeyError(f"physical frame is missing {sorted(missing)}")
+    out = physical.drop(columns=["coverage_pct", "below_coverage"], errors="ignore").merge(
+        coverage[["track_id", "team", "coverage_pct"]], on=["track_id", "team"], how="left"
+    )
+    out["coverage_pct"] = out["coverage_pct"].astype("float64").fillna(0.0)
+    below = out["coverage_pct"] < min_coverage_pct
+    out["below_coverage"] = below.astype(bool)
+    out["distance_m"] = out["distance_m"].astype("float64").mask(below)
+    out["hsr_distance_m"] = out["hsr_distance_m"].astype("float64").mask(below)
+    out["n_sprints"] = out["n_sprints"].astype("Int64").mask(below)
+    return out
+
+
 def count_sprints_grid(
     df_with_kin_by_window: dict[int, pd.DataFrame],
     *,
@@ -292,6 +306,7 @@ def count_sprints_grid(
     min_duration_s: float,
     min_recovery_s: float,
     frame_rate: float,
+    mean_over_track_ids: set[str] | None = None,
 ) -> pd.DataFrame:
     """Sprint counts across a (smoothing window x sprint threshold) grid.
 
@@ -312,32 +327,36 @@ def count_sprints_grid(
     -------
     tidy frame: (savgol_window_frames, sprint_threshold_mps,
     total_sprints, sprints_per_player_mean), one row per grid cell,
-    sorted by window then threshold. ``sprints_per_player_mean`` divides
-    by every non-ball track in that frame, including players with zero
-    sprints. ``scripts/validate.py`` turns this into
+    sorted by window then threshold. ``total_sprints`` counts every
+    non-ball track. ``sprints_per_player_mean`` is the mean over
+    ``mean_over_track_ids`` (e.g. full-match outfield players, counting
+    only their sprints and including those with zero), or over every
+    non-ball track when that is None. ``scripts/validate.py`` turns this into
     ``reports/sensitivity.json`` and the README table, including the
     spread from :func:`sprint_spread_pct` (the "N%").
     """
     rows = []
     for window in sorted(df_with_kin_by_window):
         df = df_with_kin_by_window[window]
-        n_players = df.loc[~df["is_ball"].astype(bool), "track_id"].nunique()
+        if mean_over_track_ids is None:
+            mean_ids = set(df.loc[~df["is_ball"].astype(bool), "track_id"].astype(str))
+        else:
+            mean_ids = {str(t) for t in mean_over_track_ids}
         for threshold in sorted(threshold_grid_mps):
-            total = len(
-                detect_sprints(
-                    df,
-                    threshold_mps=threshold,
-                    min_duration_s=min_duration_s,
-                    min_recovery_s=min_recovery_s,
-                    frame_rate=frame_rate,
-                )
+            sprints = detect_sprints(
+                df,
+                threshold_mps=threshold,
+                min_duration_s=min_duration_s,
+                min_recovery_s=min_recovery_s,
+                frame_rate=frame_rate,
             )
+            n_mean = int(sprints["track_id"].astype(str).isin(mean_ids).sum())
             rows.append(
                 {
                     "savgol_window_frames": int(window),
                     "sprint_threshold_mps": float(threshold),
-                    "total_sprints": int(total),
-                    "sprints_per_player_mean": total / n_players if n_players else np.nan,
+                    "total_sprints": int(len(sprints)),
+                    "sprints_per_player_mean": n_mean / len(mean_ids) if mean_ids else np.nan,
                 }
             )
     return pd.DataFrame(rows, columns=GRID_COLUMNS)

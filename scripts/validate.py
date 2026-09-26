@@ -41,9 +41,9 @@ For one Metrica match, the match is RE-LOADED at its native frame rate
 (local raw cache under ``data/raw/``, no network) and run through
 ``add_kinematics`` for every ``savgol_window_frames_grid`` value, then
 ``count_sprints_grid`` over ``sprint_threshold_mps_grid``. Windows are in
-frames at the NATIVE rate — the same rate the pipeline now smooths at
-(DD-030): sweeping the cached 5 Hz positions would answer a question the
-pipeline no longer asks, since kinematics runs before downsampling.
+frames at the NATIVE rate — the same rate the pipeline smooths at:
+sweeping the cached 5 Hz positions would answer a question the pipeline
+never asks, since kinematics runs before downsampling.
 Spread is ``sprint_spread_pct`` relative to the mid-grid cell (as the
 heatmap title); the config-default-referenced spread is recorded too.
 
@@ -114,6 +114,19 @@ REFERENCES = [
         "source": "Di Salvo, V. et al. (2007). Performance characteristics according to "
         "playing position in elite soccer. International Journal of Sports Medicine, "
         "28(3), 222-227.",
+    },
+    {
+        "metrics": ["sprints_per_match"],
+        "source": "Collins, J. J. et al. (2025). The physical demands of Major League Soccer "
+        "match-play with specific reference to high-intensity activity by position, venue "
+        "and opposition quality. PLoS ONE, 20(10), e0334460. Optical tracking (Second "
+        "Spectrum, 25 Hz), sprint >25.2 km/h with a 1 s minimum duration - the definition "
+        "used here; outfield players completing >=80 min: 10.27 +/- 5.40 sprints per match "
+        "(centre-back 7.56 +/- 3.62 up to wide midfielder 13.92 +/- 5.62). Band = roughly "
+        "mean +/- 2 SD, upper end from the highest position. Corroborated by Andrzejewski, "
+        "M. et al. (2013), J Strength Cond Res 27(8), 2134-2140: 11.2 +/- 5.3 sprints per "
+        "match at >=24 km/h (UEFA Europa League). Studies without a minimum duration report "
+        "~3x higher counts, so they are not comparable.",
     },
     {
         "metrics": ["top_speed_mps"],
@@ -219,7 +232,7 @@ def _kin(df: pd.DataFrame, metrics_cfg: dict, frame_rate: float, **overrides) ->
 
 
 def _distance(df_kin: pd.DataFrame) -> float:
-    _, per_match = physical.distance_covered(df_kin, provider="metrica")
+    _, per_match = physical.distance_covered(df_kin)
     return float(per_match["distance_m"].sum())
 
 
@@ -266,7 +279,7 @@ def _synthetic_kinematics(metrics_cfg: dict) -> list[dict]:
     checks.append(_check("circle_r9.15_one_lap", "distance_m", expected, d, f"rel {TOL_REL}",
                          _close(d, expected, rel_tol=TOL_REL)))
     zones = physical.speed_zones(
-        circle, zones_mps=metrics_cfg["physical"]["speed_zones_mps"], provider="metrica"
+        circle, zones_mps=metrics_cfg["physical"]["speed_zones_mps"]
     )
     z = float(zones["distance_m"].sum())
     checks.append(_check("circle_r9.15_one_lap", "speed_zones_sum_equals_distance", d, z,
@@ -286,7 +299,7 @@ def _synthetic_kinematics(metrics_cfg: dict) -> list[dict]:
     n = len(_sprints(hsr_track, metrics_cfg, fr))
     checks.append(_check(f"straight_line_{hsr_speed:g}mps_10s", "n_sprints", 0, n, 0, n == 0))
     hsr = float(physical.high_speed_running(
-        hsr_track, threshold_mps=phys["hsr_threshold_mps"], provider="metrica"
+        hsr_track, threshold_mps=phys["hsr_threshold_mps"]
     )["hsr_distance_m"].sum())
     d = _distance(hsr_track)
     checks.append(_check(f"straight_line_{hsr_speed:g}mps_10s", "hsr_distance_equals_distance",
@@ -340,20 +353,33 @@ def _synthetic_shape_space(metrics_cfg: dict) -> list[dict]:
     return checks
 
 
-def _synthetic_refusal(metrics_cfg: dict) -> list[dict]:
-    df = _kin(straight_line_track(), metrics_cfg, 25.0)
-    checks = []
-    for fn_name, call in (
-        ("distance_covered", lambda: physical.distance_covered(df, provider="skillcorner")),
-        ("high_speed_running", lambda: physical.high_speed_running(
-            df, threshold_mps=metrics_cfg["physical"]["hsr_threshold_mps"],
-            provider="SkillCorner")),
-        ("speed_zones", lambda: physical.speed_zones(
-            df, zones_mps=metrics_cfg["physical"]["speed_zones_mps"], provider="skillcorner")),
-    ):
-        checks.append(_check("skillcorner_refusal", f"{fn_name}_raises", 1,
-                             int(_raises(call, ValueError)), 0, _raises(call, ValueError)))
-    return checks
+def _synthetic_coverage_rule(metrics_cfg: dict) -> list[dict]:
+    """Physical metrics are refused by coverage, never by provider name: a
+    track seen in 40% of the frames (as from a new source, "track_a") is
+    blanked, a fully tracked one is reported unchanged."""
+    min_cov = float(metrics_cfg["physical"]["min_coverage_pct"])
+    full = _kin(straight_line_track(), metrics_cfg, 25.0)  # 5 m/s for 10 s -> 50 m
+    tid = str(full.loc[~full["is_ball"].astype(bool), "track_id"].iloc[0])
+    n_frames = full["frame_id"].nunique()
+    partial = full[(full["track_id"].astype(str) == tid)
+                   & (full["frame_id"] < 0.4 * n_frames)].assign(track_id="track_a")
+    df = pd.concat([full, partial], ignore_index=True)
+
+    _, dist = physical.distance_covered(df)
+    rows = dist.assign(hsr_distance_m=0.0, n_sprints=0)
+    _, cov = pipeline.coverage_table(df)
+    out = physical.apply_coverage_rule(rows, cov, min_coverage_pct=min_cov)
+    out = out.set_index(out["track_id"].astype(str))
+
+    refused = bool(out.loc["track_a", "below_coverage"]) and pd.isna(
+        out.loc["track_a", "distance_m"])
+    kept = float(out.loc[tid, "distance_m"])
+    return [
+        _check("coverage_rule_track_a_40pct", "physical_refused", 1, int(refused), 0, refused),
+        _check("coverage_rule_full_track", "distance_m", 50.0, kept, TOL_LINEAR_DISTANCE_M,
+               _close(kept, 50.0, abs_tol=TOL_LINEAR_DISTANCE_M)
+               and not bool(out.loc[tid, "below_coverage"])),
+    ]
 
 
 def _raises(call: Callable[[], object], exc: type[Exception]) -> bool:
@@ -368,7 +394,7 @@ def synthetic_checks(metrics_cfg: dict) -> list[dict]:
     return [
         *_synthetic_kinematics(metrics_cfg),
         *_synthetic_shape_space(metrics_cfg),
-        *_synthetic_refusal(metrics_cfg),
+        *_synthetic_coverage_rule(metrics_cfg),
     ]
 
 
@@ -396,6 +422,7 @@ def physiological_checks(
     d_lo, d_hi = ranges["total_distance_km"]
     s_lo, s_hi = ranges["top_speed_mps"]
     h_lo, h_hi = ranges["hsr_share_of_distance_pct"]
+    n_lo, n_hi = ranges["sprints_per_match"]
     compact = ranges.get("team_compactness_m2")
 
     checks: list[dict] = []
@@ -403,17 +430,26 @@ def physiological_checks(
     not_checked: list[dict] = []
     for provider, match_id in cached_matches(cache_dir):
         match = f"{provider}/{match_id}"
-        if provider in physical.REFUSED_PROVIDERS:
-            note = _meta(cache_dir, provider, match_id).get("physical_note", "")
-            for metric in ("total_distance_km", "top_speed_mps", "hsr_share_of_distance_pct"):
-                excluded.append({"match": match, "metric": metric, "reason": note})
-            continue
-
         tracking = _read(cache_dir, provider, match_id, "tracking", columns=_tracking_cols())
         full = full_match_players(tracking)
         gks = goalkeepers(tracking)
         phys_df = _read(cache_dir, provider, match_id, "physical")
         phys_df["track_id"] = phys_df["track_id"].astype(str)
+        if "below_coverage" not in phys_df.columns:
+            phys_df["below_coverage"] = False
+        # Same rule as the pipeline: a track below physical.min_coverage_pct has
+        # no reported physical values, so there is nothing to range-check.
+        refused = sorted(phys_df.loc[phys_df["below_coverage"].astype(bool)
+                                     & phys_df["track_id"].isin(full), "track_id"])
+        if refused:
+            reason = (f"{len(refused)} full-match track(s) below "
+                      f"{metrics_cfg['physical']['min_coverage_pct']:g}% coverage: physical "
+                      "metrics not reported (undercounts)")
+            for metric in ("total_distance_km", "top_speed_mps", "hsr_share_of_distance_pct",
+                           "sprints_per_match"):
+                excluded.append({"match": match, "metric": metric, "reason": reason,
+                                 "n_tracks": len(refused)})
+        phys_df = phys_df[~phys_df["below_coverage"].astype(bool)]
         top = (
             tracking.loc[~tracking["is_ball"].astype(bool)]
             .assign(track_id=lambda d: d["track_id"].astype(str))
@@ -436,8 +472,12 @@ def physiological_checks(
             share = 100.0 * row.hsr_distance_m / row.distance_m if row.distance_m else np.nan
             checks.append(_range_check(match, "hsr_share_of_distance_pct", tid, share,
                                        h_lo, h_hi))
+            checks.append(_range_check(match, "sprints_per_match", tid, float(row.n_sprints),
+                                       n_lo, n_hi))
 
         shape_df = _read(cache_dir, provider, match_id, "shape")
+        if "low_outfield_count" in shape_df.columns:  # hull of a partial team is too small
+            shape_df = shape_df[~shape_df["low_outfield_count"].astype(bool)]
         medians = shape_df.groupby("team")["hull_area_m2"].median()
         for team, med in medians.items():
             if compact is not None:
@@ -551,6 +591,8 @@ def write_validation_report(
         "config_hash": config_hash(metrics_cfg),
         "full_match_rule": "outfield players present in the first and last frame of "
                            "every period; substitutes are not range-checked",
+        "coverage_rule": f"physical metrics reported only for tracks with >= "
+                         f"{metrics_cfg['physical']['min_coverage_pct']:g}% coverage",
         "synthetic": synthetic,
         "physiological": physio,
         "excluded": excluded,
@@ -600,9 +642,9 @@ def write_sensitivity_report(
     grid_cfg = phys["sensitivity"]
     windows = [int(w) for w in grid_cfg["savgol_window_frames_grid"]]
     thresholds = [float(t) for t in grid_cfg["sprint_threshold_mps_grid"]]
-    # Native rate, not the cache rate: the pipeline now smooths BEFORE
-    # downsampling (DD-030), so sweeping the window at the cached 5 Hz
-    # rate would test a knob the pipeline doesn't actually turn anymore.
+    # Native rate, not the cache rate: the pipeline smooths BEFORE
+    # downsampling, so sweeping the window at the cached 5 Hz rate would
+    # test a knob the pipeline doesn't turn.
     frame_rate = float(_meta(cache_dir, "metrica", mid)["source_frame_rate_hz"])
 
     base_df = get_loader("metrica").load(mid)
@@ -618,9 +660,9 @@ def write_sensitivity_report(
             base_df, dataclasses.replace(base_kin, savgol_window_frames=w)
         )
         by_window[w] = df_kin
-        _, dist = physical.distance_covered(df_kin, provider="metrica")
+        _, dist = physical.distance_covered(df_kin)
         hsr = physical.high_speed_running(
-            df_kin, threshold_mps=phys["hsr_threshold_mps"], provider="metrica"
+            df_kin, threshold_mps=phys["hsr_threshold_mps"]
         )
         merged = dist.merge(hsr, on=["track_id", "team"])
         merged = merged[merged["track_id"].astype(str).isin(outfield_full)]
@@ -638,6 +680,7 @@ def write_sensitivity_report(
         min_duration_s=phys["sprint_min_duration_s"],
         min_recovery_s=phys["sprint_min_recovery_s"],
         frame_rate=frame_rate,
+        mean_over_track_ids=outfield_full,
     )
     # Mid-grid reference (the spec's rule, and what viz.sensitivity_heatmap titles
     # with), so the figure and this file quote the same N%.
@@ -660,12 +703,15 @@ def write_sensitivity_report(
     dist_spread = None if pd.isna(ref_km) else _spread(dist_df["mean_km"].astype(float),
                                                         float(ref_km))
 
+    dist_txt = "" if dist_spread is None else f" and distance {dist_spread:.0f}%"
     sentence = (
-        f"Sprint count varies by {spread:.0f}% across defensible parameter choices "
-        f"(Savitzky-Golay window {min(windows)}-{max(windows)} frames at {frame_rate:g} Hz, "
-        f"sprint threshold {min(thresholds):g}-{max(thresholds):g} m/s; "
-        f"{thr_only:.0f}% from the threshold alone), so I report the parameters "
-        "alongside the number."
+        f"Smoothing barely matters: across Savitzky-Golay windows of {min(windows)}-"
+        f"{max(windows)} frames at {frame_rate:g} Hz, sprint count moves {win_only:.0f}%"
+        f"{dist_txt}. The sprint threshold ({min(thresholds):g}-"
+        f"{max(thresholds):g} m/s) moves it {thr_only:.0f}%. So disagreement between sprint "
+        f"numbers comes from how a sprint is defined, not how speed is computed "
+        f"({spread:.0f}% across the whole grid), and I report the definition alongside the "
+        "number."
     )
     report = {
         "generated_at": _now(),
@@ -679,6 +725,8 @@ def write_sensitivity_report(
             "sprint_min_recovery_s": phys["sprint_min_recovery_s"],
             "hsr_threshold_mps": phys["hsr_threshold_mps"],
         },
+        "per_player_mean_scope": f"full-match outfield players (n={len(outfield_full)}); "
+                                 "total counts every tracked player",
         "sprint_count": [
             {"window": int(r.savgol_window_frames), "threshold": float(r.sprint_threshold_mps),
              "total": int(r.total_sprints), "per_player_mean": _num(r.sprints_per_player_mean)}

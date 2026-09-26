@@ -13,9 +13,9 @@ pitch:
 kinematics:
   # Savitzky-Golay filter applied to position before differencing.
   # Frames are counted at the match's NATIVE frame rate (pipeline.py runs
-  # kinematics before downsampling for the cache, DD-030/012): 21 frames
+  # kinematics before downsampling for the cache): 21 frames
   # at Metrica's 25 Hz is ~0.84s of smoothing. A window sized in frames at
-  # the 5 Hz CACHE rate (the old default, 7 => 1.4s) over-smooths and
+  # the 5 Hz CACHE rate (7 frames => 1.4s) over-smooths and
   # flattens sub-second sprint peaks almost entirely.
   savgol_window_frames: 21     # SWEPT — odd int; larger = smoother + more lag
   savgol_polyorder: 2          # must be < savgol_window_frames
@@ -33,6 +33,10 @@ physical:
   sprint_threshold_mps: 7.0    # SWEPT — sprint speed floor
   sprint_min_duration_s: 1.0   # must stay above threshold at least this long
   sprint_min_recovery_s: 1.0   # gap below threshold shorter than this => same sprint
+  # Distance/HSR/sprints are only reported for tracks seen in at least this
+  # share of the match's frames; below it the totals are undercounts (camera
+  # out of view, substitution, track loss), so they are left missing.
+  min_coverage_pct: 95.0
   # Speed zones tile the axis with no gaps/overlaps; last upper bound is "infinity".
   speed_zones_mps:
     - [0.0, 2.0]     # walk
@@ -60,6 +64,7 @@ physiological_ranges:
   total_distance_km: [9.0, 12.0]       # per outfield player, full match
   top_speed_mps: [8.0, 11.0]           # outfield players
   hsr_share_of_distance_pct: [5.0, 15.0]
+  sprints_per_match: [2, 25]            # per full-match outfield player; Collins et al. 2025
   team_compactness_m2: [300.0, 1500.0] # team convex-hull area, per-frame median
 
 cache:

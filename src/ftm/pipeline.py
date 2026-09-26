@@ -21,7 +21,7 @@ from ftm.kinematics import KinematicsConfig, add_kinematics
 from ftm.loaders import get_loader
 from ftm.metrics import pressing, shape, space
 from ftm.metrics.physical import (
-    REFUSED_PROVIDERS,
+    apply_coverage_rule,
     detect_sprints,
     distance_covered,
     high_speed_running,
@@ -40,6 +40,7 @@ _REQUIRED_KEYS: dict[str, list[str]] = {
         "sprint_min_duration_s",
         "sprint_min_recovery_s",
         "speed_zones_mps",
+        "min_coverage_pct",
     ],
     "pressing": ["press_radius_m", "carrier_search_radius_m"],
     "space": ["include_gk"],
@@ -52,9 +53,9 @@ class PipelineConfig:
 
     metrics_yaml_path   Path to ``configs/metrics.yaml``.
     cache_dir           Output dir (``data/cache``).
-    target_hz           Downsample rate for the cache (e.g. 5.0). Full
-                        25 Hz cache is too big for HF Spaces; the README
-                        must state the chosen rate.
+    target_hz           Downsample rate for the cache (e.g. 5.0). A full
+                        25 Hz cache is ~5x larger for no visible gain in
+                        the dashboard.
     include_space       Voronoi is slow — allow skipping it in dev runs.
     """
 
@@ -75,8 +76,9 @@ class MatchArtifacts:
     space_player  Per-(frame, player) space control detail, for the
                   pitch-snapshot overlay. Empty when ``include_space`` is
                   False.
-    physical      Per-player physical metrics (empty/flagged for
-                  SkillCorner).
+    physical      Per-player physical metrics; tracks below
+                  ``physical.min_coverage_pct`` keep their row with the
+                  values missing and ``below_coverage`` set.
     coverage      Per-player coverage % for the match.
     meta          JSON dump of ``MatchMeta`` + config + clip report.
     """
@@ -164,9 +166,9 @@ def downsample(df: pd.DataFrame, *, from_hz: float, to_hz: float) -> pd.DataFram
 
     ``N = round(from_hz / to_hz)``. Slice by frame index within each
     period (not by time rounding) to keep ``frame_id`` monotonic. Recompute
-    nothing here — downsample BEFORE kinematics so smoothing windows are
-    defined in terms of the cached rate, and record both rates in
-    ``MatchArtifacts.meta``.
+    nothing here: ``run_match`` downsamples AFTER kinematics, so speeds are
+    smoothed at the native rate and only thinned for storage. Both rates
+    are recorded in ``MatchArtifacts.meta``.
     """
     if to_hz <= 0 or from_hz <= 0:
         raise ValueError(f"rates must be positive, got from_hz={from_hz}, to_hz={to_hz}")
@@ -214,18 +216,18 @@ def run_match(
     5. ``shape.compute_all`` / ``pressing.compute_all`` /
        (``space.team_space_control`` if ``cfg.include_space``), on the
        downsampled frame -- none of these read speed/vx/vy/step_dist.
-    6. Physical metrics: run them for Metrica **on ``df_native``**, not
+    6. Physical metrics on ``df_native``, not
        the downsampled frame. Smoothing position at 5 Hz (the cache rate)
        flattens a sub-second sprint peak almost entirely -- a 7-frame
        Sav-Gol window is 1.4 s of smoothing at 5 Hz, whereas the same
        window at the source 25 Hz is 0.28 s. Computing kinematics at the
        native rate and only downsampling the already-smoothed result for
        storage keeps peak speed / HSR share honest without inflating
-       tracking jitter into fake sprints (see design_decision.md #012/#030).
-       For SkillCorner produce the flagged/empty physical frame and rely
-       on ``coverage_table``.
-    7. ``coverage_table(df)`` on the downsampled frame (coverage is a
-       cache-rate concept -- it feeds the dashboard's per-player table).
+       tracking jitter into fake sprints.
+    7. ``coverage_table(df)`` on the downsampled frame, then
+       ``apply_coverage_rule``: tracks seen for less than
+       ``physical.min_coverage_pct`` of the match get missing physical
+       values (the rule looks at the data, never at the provider name).
     8. Write each tidy frame to ``cfg.cache_dir`` as
        ``<provider>__<match_id>__<name>.parquet``; dump ``meta`` JSON
        including ``clip`` and the resolved config.
@@ -254,43 +256,39 @@ def run_match(
             pd.DataFrame(columns=space.PLAYER_FRAME_COLUMNS),
         )
 
-    provider_key = provider.strip().lower()
-    if provider_key in REFUSED_PROVIDERS:
-        physical_df = pd.DataFrame(
-            columns=["track_id", "team", "distance_m", "hsr_distance_m", "n_sprints"]
-        )  # provider/match_id added below, same as the non-empty branch
-        physical_note = (
-            f"physical (distance/HSR/sprints) not reported for provider={provider_key!r}: "
-            "broadcast tracking is not comparable to full-pitch optical tracking."
-        )
-    else:
-        physical_cfg = metrics_cfg["physical"]
-        _, per_match_dist = distance_covered(df_native, provider=provider_key)
-        hsr = high_speed_running(
-            df_native, threshold_mps=physical_cfg["hsr_threshold_mps"], provider=provider_key
-        )
-        sprints = detect_sprints(
-            df_native,
-            threshold_mps=physical_cfg["sprint_threshold_mps"],
-            min_duration_s=physical_cfg["sprint_min_duration_s"],
-            min_recovery_s=physical_cfg["sprint_min_recovery_s"],
-            frame_rate=meta.frame_rate,
-        )
-        n_sprints = (
-            sprints.groupby(["track_id", "team"], observed=True, sort=True)
-            .size()
-            .rename("n_sprints")
-            .reset_index()
-        )
-        physical_df = (
-            per_match_dist.merge(hsr, on=["track_id", "team"], how="left")
-            .merge(n_sprints, on=["track_id", "team"], how="left")
-        )
-        physical_df["hsr_distance_m"] = physical_df["hsr_distance_m"].fillna(0.0)
-        physical_df["n_sprints"] = physical_df["n_sprints"].fillna(0).astype(int)
-        physical_note = ""
+    physical_cfg = metrics_cfg["physical"]
+    _, per_match_dist = distance_covered(df_native)
+    hsr = high_speed_running(df_native, threshold_mps=physical_cfg["hsr_threshold_mps"])
+    sprints = detect_sprints(
+        df_native,
+        threshold_mps=physical_cfg["sprint_threshold_mps"],
+        min_duration_s=physical_cfg["sprint_min_duration_s"],
+        min_recovery_s=physical_cfg["sprint_min_recovery_s"],
+        frame_rate=meta.frame_rate,
+    )
+    n_sprints = (
+        sprints.groupby(["track_id", "team"], observed=True, sort=True)
+        .size()
+        .rename("n_sprints")
+        .reset_index()
+    )
+    physical_df = (
+        per_match_dist.merge(hsr, on=["track_id", "team"], how="left")
+        .merge(n_sprints, on=["track_id", "team"], how="left")
+    )
+    physical_df["hsr_distance_m"] = physical_df["hsr_distance_m"].fillna(0.0)
+    physical_df["n_sprints"] = physical_df["n_sprints"].fillna(0).astype(int)
 
     _, coverage_per_match = coverage_table(df)
+    min_cov = float(physical_cfg["min_coverage_pct"])
+    physical_df = apply_coverage_rule(physical_df, coverage_per_match, min_coverage_pct=min_cov)
+    n_below = int(physical_df["below_coverage"].sum())
+    physical_note = (
+        f"{n_below} of {len(physical_df)} tracks below {min_cov:g}% coverage: "
+        "distance/HSR/sprints not reported for them (undercounts)."
+        if n_below else ""
+    )
+    provider_key = provider.strip().lower()
     # provider/match_id are only implicit in the filename otherwise; a report or
     # dashboard combining coverage/physical across many cached matches needs them
     # as real columns, not something parsed back out of a path.
@@ -323,6 +321,7 @@ def run_match(
         "target_hz_requested": cfg.target_hz,
         "clip_report": asdict(clip),
         "physical_note": physical_note,
+        "physical_min_coverage_pct": min_cov,
         "physical_computed_at_hz": meta.frame_rate,
         "include_space": cfg.include_space,
     }

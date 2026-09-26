@@ -4,9 +4,8 @@ Each loader knows one provider's native format (via kloppy or raw files)
 and nothing else. Its job: read a match, apply the coordinate + orientation
 transforms, and return a DataFrame that passes ``ftm.schema.validate()``.
 
-This is the ``backends/base.py`` idea from project A1 lifted one level up:
-there, every inference backend produced the same ``Detection`` list; here,
-every provider produces the same canonical tracking frame.
+Every provider produces the same canonical tracking frame, so nothing
+downstream of the loaders needs to know where the data came from.
 
 Public surface
 --------------
@@ -36,7 +35,7 @@ def get_loader(name: str) -> BaseLoader:
         raise ``KeyError`` (with the list of known names) on anything
         else. Keeping this factory the only construction path means the
         pipeline, cache builder and dashboard all resolve providers the
-        same way — same reason A1 had ``build_backend()``.
+        same way.
     """
     registry: dict[str, type[BaseLoader]] = {
         "metrica": MetricaLoader,

@@ -1,7 +1,6 @@
 """Known-answer tests for ``ftm.metrics.physical`` using hand-placed data.
 
-Trivial to write, and they catch sign errors that a plot happily hides
-(spec step 3).
+Trivial to write, and they catch sign errors that a plot happily hides.
 
 Kinematics columns are attached by hand (``step_dist = speed / frame_rate``)
 so these tests do not depend on ``ftm.kinematics``.
@@ -52,18 +51,45 @@ def frame_for(profiles: dict[str, np.ndarray], *, period: int = 1) -> pd.DataFra
     return with_kinematics(base, profiles)
 
 
-def test_distance_covered_refused_for_skillcorner():
-    """``physical.distance_covered(..., provider="skillcorner")`` raises
-    or returns an explicitly-flagged empty frame — never a silent
-    number."""
-    df = frame_for({"p1": segments((2.0, BASE_SPEED))})
-    for provider in ("skillcorner", "SkillCorner", " SKILLCORNER "):
-        with pytest.raises(ValueError, match="broadcast"):
-            physical.distance_covered(df, provider=provider)
-        with pytest.raises(ValueError, match="broadcast"):
-            physical.speed_zones(df, zones_mps=[(0.0, 99.0)], provider=provider)
-        with pytest.raises(ValueError, match="broadcast"):
-            physical.high_speed_running(df, threshold_mps=5.5, provider=provider)
+def _physical_rows() -> pd.DataFrame:
+    return pd.DataFrame({
+        "track_id": ["full", "partial", "untracked"], "team": ["home", "home", "away"],
+        "distance_m": [10500.0, 4200.0, 3000.0], "hsr_distance_m": [800.0, 300.0, 100.0],
+        "n_sprints": [12, 4, 2],
+    })
+
+
+def test_coverage_rule_blanks_only_low_coverage_tracks():
+    coverage = pd.DataFrame({"track_id": ["full", "partial"], "team": ["home", "home"],
+                             "coverage_pct": [100.0, 40.0]})
+    out = physical.apply_coverage_rule(_physical_rows(), coverage, min_coverage_pct=95.0)
+    out = out.set_index("track_id")
+
+    assert out.loc["full", "distance_m"] == 10500.0
+    assert out.loc["full", "n_sprints"] == 12
+    assert not out.loc["full", "below_coverage"]
+    for tid in ("partial", "untracked"):  # untracked: missing from coverage = 0%
+        assert out.loc[tid, "below_coverage"]
+        assert pd.isna(out.loc[tid, "distance_m"])
+        assert pd.isna(out.loc[tid, "hsr_distance_m"])
+        assert pd.isna(out.loc[tid, "n_sprints"])
+    assert out.loc["untracked", "coverage_pct"] == 0.0
+    assert str(out["n_sprints"].dtype) == "Int64"
+
+
+def test_coverage_rule_threshold_is_inclusive():
+    coverage = pd.DataFrame({"track_id": ["full"], "team": ["home"], "coverage_pct": [95.0]})
+    out = physical.apply_coverage_rule(_physical_rows().iloc[:1], coverage,
+                                       min_coverage_pct=95.0)
+    assert not out["below_coverage"].iloc[0]
+    assert out["distance_m"].iloc[0] == 10500.0
+
+
+def test_coverage_rule_requires_metric_columns():
+    with pytest.raises(KeyError, match="n_sprints"):
+        physical.apply_coverage_rule(_physical_rows().drop(columns="n_sprints"),
+                                     pd.DataFrame(columns=["track_id", "team", "coverage_pct"]),
+                                     min_coverage_pct=95.0)
 
 
 def test_distance_covered_per_period_and_total():
@@ -72,7 +98,7 @@ def test_distance_covered_per_period_and_total():
     df = pd.concat([p1, p2], ignore_index=True)
     df.loc[df.index[0], ["speed", "step_dist"]] = np.nan
 
-    per_period, per_match = physical.distance_covered(df, provider="metrica")
+    per_period, per_match = physical.distance_covered(df)
 
     assert list(per_period.columns) == ["track_id", "team", "period", "distance_m"]
     assert list(per_match.columns) == ["track_id", "team", "distance_m"]
@@ -90,7 +116,7 @@ def test_speed_zones_partition_distance(metrics_cfg):
     profile = segments((1.0, 1.0), (1.0, 2.0), (1.0, 5.5), (1.0, 6.0), (1.0, 7.0), (1.0, 150.0))
     df = frame_for({"p1": profile})
 
-    out = physical.speed_zones(df, zones_mps=zones, provider="metrica")
+    out = physical.speed_zones(df, zones_mps=zones)
 
     assert list(out["zone_label"]) == ["0-2", "2-4", "4-5.5", "5.5-7", "7+"]
     got = out.set_index("zone_label")["distance_m"]
@@ -99,14 +125,14 @@ def test_speed_zones_partition_distance(metrics_cfg):
     assert got["4-5.5"] == pytest.approx(0.0)
     assert got["5.5-7"] == pytest.approx(11.5)
     assert got["7+"] == pytest.approx(157.0)
-    _, total = physical.distance_covered(df, provider="metrica")
+    _, total = physical.distance_covered(df)
     assert out["distance_m"].sum() == pytest.approx(total["distance_m"].sum())
 
 
 def test_speed_zones_reject_non_tiling_bands():
     df = frame_for({"p1": segments((1.0, 1.0))})
     with pytest.raises(ValueError, match="tile"):
-        physical.speed_zones(df, zones_mps=[(0.0, 2.0), (3.0, 99.0)], provider="metrica")
+        physical.speed_zones(df, zones_mps=[(0.0, 2.0), (3.0, 99.0)])
 
 
 def test_high_speed_running_counts_only_at_or_above_threshold(metrics_cfg):
@@ -115,7 +141,7 @@ def test_high_speed_running_counts_only_at_or_above_threshold(metrics_cfg):
     slow = segments((4.0, threshold - 0.1))
     df = frame_for({"fast": fast, "slow": slow})
 
-    out = physical.high_speed_running(df, threshold_mps=threshold, provider="metrica")
+    out = physical.high_speed_running(df, threshold_mps=threshold)
 
     got = out.set_index("track_id")["hsr_distance_m"]
     assert set(got.index) == {"fast", "slow"}

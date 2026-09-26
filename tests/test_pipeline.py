@@ -153,20 +153,36 @@ def test_run_match_writes_every_artifact(tmp_path, monkeypatch):
     assert "n_clipped" in meta["clip_report"]
 
 
-def test_run_match_refuses_physical_for_skillcorner(tmp_path, monkeypatch):
-    loader = _FakeLoader()
-    loader.name = "skillcorner"
+def test_physical_refused_by_coverage_not_by_provider_name(tmp_path, monkeypatch):
+    """A new provider the pipeline has never heard of ("track_a") gets the
+    same rule as every other: a track seen in 40% of frames is refused, a
+    fully tracked one is reported. Nothing keys on the provider's name."""
+    loader = _FakeLoader(n_frames=130)
+    loader.name = "track_a"
+    df = loader._df
+    drop = (df["track_id"] == "h_f1") & (df["frame_id"] >= 52)  # tracked in 52/130 = 40%
+    loader._df = df.loc[~drop].reset_index(drop=True)
     monkeypatch.setattr(pipeline, "get_loader", lambda name: loader)
     cfg = pipeline.PipelineConfig(
         metrics_yaml_path=METRICS_YAML, cache_dir=tmp_path, target_hz=5.0
     )
-    artifacts = pipeline.run_match("skillcorner", "m1", cfg)
-    physical = pd.read_parquet(artifacts.physical)
-    assert len(physical) == 0
-    assert set(physical.columns) >= {"provider", "match_id"}
+    artifacts = pipeline.run_match("track_a", "m1", cfg)
+    physical = pd.read_parquet(artifacts.physical).set_index("track_id")
+
+    partial = physical.loc["h_f1"]
+    assert partial["coverage_pct"] == pytest.approx(40.0, abs=3.0)  # measured on 5 Hz frames
+    assert bool(partial["below_coverage"])
+    assert pd.isna(partial["distance_m"]) and pd.isna(partial["hsr_distance_m"])
+    assert pd.isna(partial["n_sprints"])
+
+    full = physical.drop(index="h_f1")
+    assert (full["coverage_pct"] == 100.0).all()
+    assert not full["below_coverage"].any()
+    assert full["distance_m"].notna().all() and full["n_sprints"].notna().all()
 
     meta = json.loads(artifacts.meta.read_text())
-    assert "not reported" in meta["physical_note"]
+    assert meta["physical_min_coverage_pct"] == 95.0
+    assert "1 of" in meta["physical_note"]
 
 
 def test_run_match_can_skip_space(tmp_path, monkeypatch):

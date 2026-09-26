@@ -5,7 +5,7 @@ tracking: only players in frame are tracked, so players drop in and out.
 This source proves the metrics survive incomplete data, and that the
 loader abstraction actually abstracts.
 
-Hard rule (spec step 5): adding this loader must not require changing a
+Hard rule: adding this loader must not require changing a
 single line under ``ftm/metrics``. If you feel the urge to special-case
 SkillCorner inside a metric, stop — the fix belongs here or in how the
 pipeline flags low-coverage frames.
@@ -215,7 +215,7 @@ class SkillCornerLoader(BaseLoader):
         6. ``ball_state`` as described in the module docstring.
         7. ``df = ftm.schema.coerce(df)`` ; ``return ftm.schema.validate(df)``.
 
-        Gate (spec step 5): ``validate`` passes on this output, the full
+        Acceptance check: ``validate`` passes on this output, the full
         metrics pipeline runs on it unchanged, and ``reports/validation.json``
         gains a coverage table showing the Metrica vs. SkillCorner gap.
         """

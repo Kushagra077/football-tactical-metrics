@@ -1,14 +1,10 @@
 """Streamlit dashboard — reads parquet only, NEVER computes.
 
-Computing 25 Hz metrics inside a callback means every slider drag
-recomputes the match and the HF free-CPU Space feels broken. All heavy
-work happened in ``scripts/build_cache.py``; this file loads tidy parquet
-from ``data/cache/`` and draws it.
-
-Gate (spec step 7): a slider drag re-renders in under a second locally.
-
-Deploy: HF Spaces, Streamlit SDK, CPU Basic. Free Spaces sleep after
-inactivity — say so in the Space description.
+Computing 25 Hz metrics inside a callback would mean every slider drag
+recomputes the match. All heavy work happened in
+``scripts/build_cache.py``; this file loads tidy parquet from
+``data/cache/`` and draws it, so a slider drag re-renders in under a
+second.
 
 --------------------------------------------------------------------------
 Layout
@@ -28,8 +24,8 @@ Main:
   2. Time series — line height / width / compactness for both teams over
      the window (``ftm.viz.time_series``)
   3. Per-player table — physical metrics with coverage % shown next to
-     EVERY physical number; for SkillCorner the distance columns read
-     "n/a (broadcast)" rather than a misleading value
+     EVERY physical number; tracks below the pipeline's coverage threshold
+     read "n/a (low coverage)" rather than a misleading undercount
 
 Caching:
   * ``@st.cache_data`` on every parquet load, keyed by file path + mtime
@@ -50,7 +46,6 @@ import pandas as pd
 import streamlit as st
 
 from ftm import viz
-from ftm.metrics.physical import REFUSED_PROVIDERS
 
 CACHE_DIR_ENV = "FTM_CACHE_DIR"
 CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "cache"
@@ -71,7 +66,7 @@ PHYSICAL_COLUMNS = {
     "hsr_distance_m": "HSR distance (m)",
     "n_sprints": "Sprints",
 }
-NA_BROADCAST = "n/a (broadcast)"
+NA_LOW_COVERAGE = "n/a (low coverage)"
 NO_MATCHES_MSG = (
     "No cached matches found in `{cache_dir}` — run `uv run python scripts/build_cache.py` "
     "first (or point `$FTM_CACHE_DIR` at a cache directory)."
@@ -134,6 +129,7 @@ def scan_matches(cache_dir: Path) -> list[dict]:
                 "periods": _parse_periods(mm.get("periods")),
                 "target_hz": meta.get("cached_frame_rate_hz"),
                 "physical_note": meta.get("physical_note") or "",
+                "min_coverage_pct": meta.get("physical_min_coverage_pct"),
                 "label": _match_label(provider, match_id, home, away),
             }
         )
@@ -239,10 +235,6 @@ def frame_cells(space_player: pd.DataFrame, period: int, frame_id: int) -> pd.Da
     return space_player[sel].reset_index(drop=True)
 
 
-def is_broadcast(match: dict) -> bool:
-    return bool(match.get("physical_note")) or match.get("provider") in REFUSED_PROVIDERS
-
-
 def _fmt_cov(value: float, cov: float, *, integer: bool = False) -> str:
     if pd.isna(value):
         return "—"
@@ -251,14 +243,13 @@ def _fmt_cov(value: float, cov: float, *, integer: bool = False) -> str:
     return f"{num} ({cov_txt} cov)"
 
 
-def build_player_table(
-    physical: pd.DataFrame, coverage: pd.DataFrame, *, broadcast: bool
-) -> pd.DataFrame:
+def build_player_table(physical: pd.DataFrame, coverage: pd.DataFrame) -> pd.DataFrame:
     """Per-player display table: coverage % beside every physical value.
 
-    Rows come from ``coverage`` (every tracked player) left-joined with
-    ``physical`` on (track_id, team). For broadcast providers every
-    physical column reads ``NA_BROADCAST`` — never 0, which would look real.
+    Rows come from ``coverage`` (every tracked player) outer-joined with
+    ``physical`` on (track_id, team). Tracks the pipeline flagged
+    ``below_coverage`` read ``NA_LOW_COVERAGE`` in every physical column —
+    never 0 or an undercount, which would look real.
     """
     keys = ["track_id", "team"]
     cov = coverage.copy() if len(coverage) else pd.DataFrame(columns=[*keys, "coverage_pct"])
@@ -266,24 +257,28 @@ def build_player_table(
     for k in keys:
         cov[k] = cov[k].astype(str)
 
-    if broadcast or physical.empty:
+    if physical.empty:
         table = cov.copy()
         for label in PHYSICAL_COLUMNS.values():
-            table[label] = NA_BROADCAST if broadcast else "—"
+            table[label] = "—"
     else:
-        phys = physical[[*keys, *[c for c in PHYSICAL_COLUMNS if c in physical.columns]]].copy()
+        extra = [c for c in (*PHYSICAL_COLUMNS, "below_coverage") if c in physical.columns]
+        phys = physical[[*keys, *extra]].copy()
         for k in keys:
             phys[k] = phys[k].astype(str)
         table = cov.merge(phys, on=keys, how="outer")
+        flagged = (table["below_coverage"].fillna(False).astype(bool)
+                   if "below_coverage" in table.columns else pd.Series(False, index=table.index))
         for col, label in PHYSICAL_COLUMNS.items():
             if col not in table.columns:
                 table[label] = "—"
                 continue
             table[label] = [
-                _fmt_cov(v, c, integer=col == "n_sprints")
-                for v, c in zip(table[col], table["coverage_pct"], strict=True)
+                NA_LOW_COVERAGE if low else _fmt_cov(v, c, integer=col == "n_sprints")
+                for v, c, low in zip(table[col], table["coverage_pct"], flagged, strict=True)
             ]
             table = table.drop(columns=col)
+        table = table.drop(columns="below_coverage", errors="ignore")
 
     table = table.sort_values(["team", "coverage_pct"], ascending=[False, False])
     table = table.rename(
@@ -418,7 +413,7 @@ def render_time_series(selection: dict) -> None:
 
 def render_player_table(selection: dict) -> None:
     """Join ``physical`` + ``coverage``; show coverage % beside every
-    physical column; distance columns read "n/a (broadcast)" for SkillCorner."""
+    physical column; low-coverage tracks read "n/a (low coverage)"."""
     st.subheader("Players")
     cache_dir, provider, match_id = (
         selection["cache_dir"], selection["provider"], selection["match_id"],
@@ -428,20 +423,15 @@ def render_player_table(selection: dict) -> None:
     if coverage.empty and physical.empty:
         st.info("No physical or coverage data cached for this match.")
         return
-    broadcast = is_broadcast(selection["match"])
-    st.dataframe(
-        build_player_table(physical, coverage, broadcast=broadcast),
-        hide_index=True,
-    )
+    st.dataframe(build_player_table(physical, coverage), hide_index=True)
+    min_cov = selection["match"].get("min_coverage_pct")
+    rule = (f"Distance, HSR and sprints are shown only for players tracked in at least "
+            f"{float(min_cov):g}% of the match; below that the totals are undercounts."
+            if min_cov is not None else
+            "A low-coverage player's totals are undercounts.")
     st.caption(
-        "Coverage % = share of the match's frames in which the player was tracked; "
-        "it is shown beside every physical value because a low-coverage player's "
-        "totals are undercounts."
+        "Coverage % = share of the match's frames in which the player was tracked. " + rule
     )
-    if broadcast:
-        st.caption(selection["match"].get("physical_note") or (
-            "Physical metrics are not reported for broadcast tracking."
-        ))
 
 
 @st.cache_data(show_spinner=False, max_entries=4)

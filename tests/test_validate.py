@@ -64,13 +64,26 @@ class _MovingLoader(BaseLoader):
         return _MovingLoader._df
 
 
+class _PartialLoader(_MovingLoader):
+    """Same match, but every outfield runner drops out for the middle half of
+    it (still present in the first and last frame, so "full-match" by that
+    rule) — a broadcast-like source at ~50% coverage. Keepers stay in view."""
+
+    def load(self, match_id: str) -> pd.DataFrame:
+        df = super().load(match_id)
+        gone = (~df["is_ball"] & ~df["is_gk"]
+                & df["frame_id"].between(N_FRAMES // 4, 3 * N_FRAMES // 4))
+        return df.loc[~gone].reset_index(drop=True)
+
+
 @pytest.fixture(scope="module")
 def cache_dir(tmp_path_factory):
     d = tmp_path_factory.mktemp("cache")
     mp = pytest.MonkeyPatch()
-    mp.setattr(pipeline, "get_loader", lambda name: _MovingLoader())
     cfg = pipeline.PipelineConfig(metrics_yaml_path=METRICS_YAML, cache_dir=d)
+    mp.setattr(pipeline, "get_loader", lambda name: _MovingLoader())
     pipeline.run_match("metrica", "g1", cfg)
+    mp.setattr(pipeline, "get_loader", lambda name: _PartialLoader())
     pipeline.run_match("skillcorner", "s1", cfg)
     mp.undo()
     return d
@@ -101,13 +114,16 @@ def test_full_match_players_excludes_substitutes():
     assert validate.full_match_players(df) == {"gk"}
 
 
-def test_physiological_checks_skip_skillcorner_distance(cfg, cache_dir):
+def test_physiological_checks_skip_low_coverage_tracks(cfg, cache_dir):
     checks, excluded, not_checked = validate.physiological_checks(cfg, cache_dir)
-    assert checks and all(c["match"] == "metrica/g1" for c in checks)
+    player_checks = [c for c in checks
+                     if c["metric"] not in ("team_compactness_median_m2", "gk_top_speed_mps")]
+    # The ~50%-coverage match has no reported physical values: excluded, not checked.
+    assert player_checks and all(c["match"] == "metrica/g1" for c in player_checks)
     assert {e["match"] for e in excluded} == {"skillcorner/s1"}
-    assert any(e["metric"] == "total_distance_km" for e in excluded)
-    assert all("not reported" in e["reason"] for e in excluded)
-    # config now has a compactness band (DD-027/configs/metrics.yaml), so nothing
+    assert {e["metric"] for e in excluded} >= {"total_distance_km", "sprints_per_match"}
+    assert all("coverage" in e["reason"] for e in excluded)
+    # config now has a compactness band (configs/metrics.yaml), so nothing
     # is skipped for lacking one; the fixture's runners move in a straight line
     # (x and y both affine in the runner index), so their hull is degenerate and
     # the check itself comes back with a None value -> forced fail, not skipped.
@@ -118,7 +134,7 @@ def test_physiological_pass_flag_matches_band(cfg, cache_dir):
     checks, _, _ = validate.physiological_checks(cfg, cache_dir)
     metrics = {c["metric"] for c in checks}
     assert {"total_distance_km", "top_speed_mps", "hsr_share_of_distance_pct",
-            "gk_top_speed_mps"} <= metrics
+            "sprints_per_match", "gk_top_speed_mps"} <= metrics
     for c in checks:
         if c["value"] is None:
             # NaN collapsed to None (e.g. a degenerate convex hull) can never

@@ -6,9 +6,8 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.13"
 
-# Runtime deps are listed in requirements.txt (that file is what the HF
-# Space installs). Mirror the important ones here so `pip install -e .`
-# alone is enough for tests.
+# Runtime dependencies only. Test/lint tooling lives in the `dev` extra and
+# the dashboard in the `app` extra; uv.lock pins the full resolved set.
 dependencies = [
     "kloppy",
     "pandas",
@@ -19,12 +18,10 @@ dependencies = [
     "pyyaml",
     "mplsoccer",
     "matplotlib",
-    "pytest>=9.1.1",
-    "ruff>=0.16.7",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff"]
+dev = ["pytest>=9.1.1", "ruff>=0.16.7"]
 app = ["streamlit"]
 
 [build-system]
@@ -37,7 +34,7 @@ packages = ["src/ftm"]
 [tool.ruff]
 line-length = 100
 src = ["src", "scripts", "app", "tests"]
-# Exploration scratch, not shipped code; CI lints what the Space runs.
+# Notebooks are exploration scratch, not library code; keep them out of lint.
 extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]

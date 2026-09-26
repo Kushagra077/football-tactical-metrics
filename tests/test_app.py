@@ -11,6 +11,8 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
+from ftm.metrics.physical import apply_coverage_rule
+
 APP_PATH = Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py"
 
 
@@ -23,6 +25,7 @@ def _load_app_module():
 
 app = _load_app_module()
 
+MIN_COVERAGE_PCT = 95.0
 PLAYERS = [("h1", "home", True), ("h2", "home", False), ("a1", "away", True), ("a2", "away", False)]
 BASE_XY = {"h1": (-45.0, 0.0), "h2": (-10.0, 5.0), "a1": (45.0, 0.0), "a2": (10.0, -5.0)}
 
@@ -90,19 +93,17 @@ def _write_match(cache: Path, provider: str, match_id: str, *, broadcast: bool) 
 
     tids = [p[0] for p in PLAYERS]
     teams = [p[1] for p in PLAYERS]
-    cov = pd.DataFrame({"track_id": tids, "team": teams,
-                        "coverage_pct": [100.0, 100.0, 100.0, 50.0 if broadcast else 100.0]})
+    # Broadcast-like match: every track below the 95% rule, like SkillCorner.
+    coverage_pct = [80.0, 60.0, 40.0, 50.0] if broadcast else [100.0, 100.0, 100.0, 100.0]
+    cov = pd.DataFrame({"track_id": tids, "team": teams, "coverage_pct": coverage_pct})
     cov.assign(provider=provider, match_id=match_id).to_parquet(
         f"{prefix}coverage.parquet", index=False
     )
-    if broadcast:
-        phys = pd.DataFrame(columns=["track_id", "team", "distance_m", "hsr_distance_m",
-                                     "n_sprints"])
-    else:
-        phys = pd.DataFrame({"track_id": tids, "team": teams,
-                             "distance_m": [4000.0, 10500.0, 4100.0, 11000.0],
-                             "hsr_distance_m": [0.0, 800.0, 0.0, 900.0],
-                             "n_sprints": [0, 12, 0, 15]})
+    phys = pd.DataFrame({"track_id": tids, "team": teams,
+                         "distance_m": [4000.0, 10500.0, 4100.0, 11000.0],
+                         "hsr_distance_m": [0.0, 800.0, 0.0, 900.0],
+                         "n_sprints": [0, 12, 0, 15]})
+    phys = apply_coverage_rule(phys, cov, min_coverage_pct=MIN_COVERAGE_PCT)
     phys.assign(provider=provider, match_id=match_id).to_parquet(
         f"{prefix}physical.parquet", index=False
     )
@@ -116,7 +117,8 @@ def _write_match(cache: Path, provider: str, match_id: str, *, broadcast: bool) 
                         for p, n in periods.items()},
         },
         "cached_frame_rate_hz": 5.0,
-        "physical_note": "not reported for broadcast" if broadcast else "",
+        "physical_note": "4 of 4 tracks below 95% coverage" if broadcast else "",
+        "physical_min_coverage_pct": MIN_COVERAGE_PCT,
     }
     (cache / f"{provider}__{match_id}__meta.json").write_text(json.dumps(meta))
 
@@ -151,6 +153,7 @@ def test_list_cached_matches_parses_meta(fake_cache: Path):
     assert metrica["periods"] == {1: (0.0, 3.8), 2: (100.0, 102.8)}
     assert metrica["target_hz"] == 5.0
     assert matches[1]["physical_note"]
+    assert matches[1]["min_coverage_pct"] == MIN_COVERAGE_PCT
 
 
 def test_resolve_cache_dir_env_override(monkeypatch, tmp_path: Path):
@@ -198,7 +201,7 @@ def test_period_bounds_are_period_relative(fake_cache: Path):
 def test_player_table_metrica_shows_coverage_next_to_each_value(fake_cache: Path):
     phys = app.load_tidy(fake_cache, "metrica", "1", "physical")
     cov = app.load_tidy(fake_cache, "metrica", "1", "coverage")
-    table = app.build_player_table(phys, cov, broadcast=False)
+    table = app.build_player_table(phys, cov)
     assert len(table) == len(PLAYERS)
     row = table.set_index("Player").loc["h2"]
     assert row["Distance (m)"] == "10,500 (100% cov)"
@@ -207,22 +210,33 @@ def test_player_table_metrica_shows_coverage_next_to_each_value(fake_cache: Path
     assert row["Coverage %"] == 100.0
 
 
-def test_player_table_skillcorner_reads_na_not_zero(fake_cache: Path):
-    match = app.list_cached_matches(fake_cache)[1]
+def test_player_table_low_coverage_reads_na_not_a_number(fake_cache: Path):
     phys = app.load_tidy(fake_cache, "skillcorner", "4039", "physical")
     cov = app.load_tidy(fake_cache, "skillcorner", "4039", "coverage")
-    assert app.is_broadcast(match)
-    assert not app.is_broadcast(app.list_cached_matches(fake_cache)[0])
-    table = app.build_player_table(phys, cov, broadcast=True)
+    table = app.build_player_table(phys, cov)
     assert len(table) == len(PLAYERS)
     for label in app.PHYSICAL_COLUMNS.values():
-        assert (table[label] == app.NA_BROADCAST).all()
+        assert (table[label] == app.NA_LOW_COVERAGE).all()
     assert table.set_index("Player").loc["a2", "Coverage %"] == 50.0
 
 
-def test_player_table_empty_physical_non_broadcast_is_dash(fake_cache: Path):
+def test_player_table_flags_only_the_low_coverage_rows():
+    cov = pd.DataFrame({"track_id": ["p1", "p2"], "team": ["home", "home"],
+                        "coverage_pct": [99.0, 60.0]})
+    phys = apply_coverage_rule(
+        pd.DataFrame({"track_id": ["p1", "p2"], "team": ["home", "home"],
+                      "distance_m": [10000.0, 6000.0], "hsr_distance_m": [700.0, 400.0],
+                      "n_sprints": [9, 5]}),
+        cov, min_coverage_pct=MIN_COVERAGE_PCT,
+    )
+    table = app.build_player_table(phys, cov).set_index("Player")
+    assert table.loc["p1", "Distance (m)"] == "10,000 (99% cov)"
+    assert table.loc["p2", "Distance (m)"] == app.NA_LOW_COVERAGE
+
+
+def test_player_table_empty_physical_is_dash(fake_cache: Path):
     cov = app.load_tidy(fake_cache, "metrica", "1", "coverage")
-    table = app.build_player_table(pd.DataFrame(), cov, broadcast=False)
+    table = app.build_player_table(pd.DataFrame(), cov)
     assert (table["Distance (m)"] == "—").all()
 
 
@@ -272,8 +286,8 @@ def test_app_renders_panels_for_each_match(monkeypatch, fake_cache: Path):
     at.run()
     assert not at.exception, at.exception
     table = at.dataframe[0].value
-    assert (table["Distance (m)"] == app.NA_BROADCAST).all()
-    assert any("broadcast" in c.value for c in at.caption)
+    assert (table["Distance (m)"] == app.NA_LOW_COVERAGE).all()
+    assert any("at least 95% of the match" in c.value for c in at.caption)
 
 
 def test_app_empty_series_selection(monkeypatch, fake_cache: Path):

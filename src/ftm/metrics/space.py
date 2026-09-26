@@ -185,7 +185,7 @@ def team_space_control(
         area_m2, cell_wkt) for the pitch-snapshot overlay. ``cell_wkt`` is
         None when ``with_cells=False``.
 
-    Gate (spec step 6): summed team areas == 105*68 within fp tolerance.
+    Invariant: summed team areas == 105*68 within fp tolerance.
     """
     length = float(cfg["pitch"]["length_m"])
     width = float(cfg["pitch"]["width_m"])

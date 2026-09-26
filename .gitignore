@@ -16,6 +16,7 @@ B1-tactical-metrics-build-spec.md
 # Working notes — for our use only, not committed
 PROGRESS.md
 design_decision.md
+INTERVIEW_NOTES.md
 
 # Downloaded provider data + precomputed cache (regenerate with scripts/).
 # Keep the empty data/cache/ dir tracked so the pipeline has somewhere to write.
@@ -30,3 +31,6 @@ data/cache/*
 
 # Generated report artifacts (the JSON files ARE committed; figures are not)
 reports/figures/*.png
+
+# Playwright MCP scratch (screenshots, console logs)
+.playwright-mcp/

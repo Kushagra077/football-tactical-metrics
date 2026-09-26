@@ -1,7 +1,7 @@
 """Smoothing, velocity, speed, distance.
 
-Build and TEST this before any metric that depends on speed (spec step 2:
-"build the measurement path and test it while it's cheap").
+Every speed-dependent metric sits on top of this module, so it is built and
+tested first: errors here are cheap to catch now and expensive later.
 
 Why smoothing is not optional
 -----------------------------
@@ -105,8 +105,8 @@ class KinematicsConfig:
 class ClipReport:
     """How many frames hit the speed ceiling.
 
-    ``n_clipped`` and ``fraction`` go in the README per spec step 2
-    ("count how many frames you clipped — that count goes in the README").
+    ``n_clipped`` and ``fraction`` are reported in the README so readers can
+    see how much of the data the speed ceiling touched.
     ``n_glitch_steps`` counts impossible raw steps the track was split at;
     ``n_glitch_frames`` counts frames given NaN kinematics because of them.
     """
@@ -298,9 +298,9 @@ def total_distance(df_with_kin: pd.DataFrame, *, by_period: bool = False) -> pd.
     Columns: ``track_id``, ``distance_m``; with ``by_period=True`` also
     ``period`` (one row per (track_id, period)).
 
-    Sanity band (spec step 4 gate): for a full Metrica match, per-player
-    totals land in 9–12 km. Outside that, the bug is upstream (smoothing
-    / dt / orientation) — go fix step 2, do not tune thresholds until the
+    Sanity band: for a full Metrica match, per-player totals land in
+    9–12 km. Outside that, the bug is upstream (smoothing / dt /
+    orientation) — fix the kinematics, do not tune thresholds until the
     number looks nice.
     """
     keys = ["track_id", "period"] if by_period else ["track_id"]
