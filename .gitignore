@@ -34,3 +34,6 @@ reports/figures/*.png
 
 # Playwright MCP scratch (screenshots, console logs)
 .playwright-mcp/
+
+# /brag launch-video workspace (render output + composition)
+brag-output/

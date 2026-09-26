@@ -15,6 +15,11 @@ tracked, not by where the data came from.
 
 ![Dashboard demo](docs/images/dashboard.gif)
 
+[![23-second overview: click to play, with sound](docs/images/overview-poster.jpg)](docs/media/overview.mp4)
+
+*▶ 23-second overview (with sound): the headline finding, the dashboard and the
+coverage rule. Click to play.*
+
 **No hosted demo, on purpose.** The dashboard only views precomputed files;
 there's no model or live computation behind it, so the recording above and the
 [run-it-locally](#running-it-locally) steps show everything a link would. A
