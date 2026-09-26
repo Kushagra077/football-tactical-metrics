@@ -95,9 +95,19 @@ FBF_CENTROID_X = -18.4
 
 REFERENCES = [
     {
-        "metrics": ["total_distance_km", "hsr_share_of_distance_pct"],
+        "metrics": ["total_distance_km"],
         "source": "Bradley, P. S. et al. (2009). High-intensity running in English FA Premier "
         "League soccer matches. Journal of Sports Sciences, 27(2), 159-168.",
+    },
+    {
+        "metrics": ["hsr_share_of_distance_pct"],
+        "source": "Gualtieri, A. et al. (2023). High-speed running and sprinting in "
+        "professional adult soccer: current thresholds definition, match demands and "
+        "training strategies. A systematic review. Frontiers in Sports and Active Living, "
+        "5, 1116293. Men: HSR (19.8-25.2 km/h) ~7-11% and sprint (>25.2 km/h) ~1-3% of "
+        "total distance, i.e. ~8-14% at >=19.8 km/h as measured here. Those are study "
+        "means; the configured per-player band is deliberately wider because individual "
+        "players (e.g. central defenders) vary more than averages.",
     },
     {
         "metrics": ["total_distance_km"],
