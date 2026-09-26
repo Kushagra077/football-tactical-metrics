@@ -61,6 +61,8 @@ def _shape(tracking: pd.DataFrame) -> pd.DataFrame:
     out["width_m"] = 30.0
     out["length_m"] = 35.0
     out["hull_area_m2"] = 900.0
+    out["cx_m"] = [-10.0 if t == "home" else 10.0 for t in out["team"]]
+    out["cy_m"] = 0.0
     return out
 
 
@@ -248,7 +250,7 @@ def test_app_renders_panels_for_each_match(monkeypatch, fake_cache: Path):
     assert not at.exception, at.exception
     assert len(at.sidebar.selectbox) == 1
     assert len(at.sidebar.slider) == 1
-    assert len(at.sidebar.toggle) == 1
+    assert len(at.sidebar.toggle) == 2  # Voronoi, centroid trace
     assert len(at.sidebar.multiselect) == 1
     headers = [h.value for h in at.subheader]
     assert headers == ["Pitch snapshot", "Team shape over the window", "Players"]
@@ -257,6 +259,7 @@ def test_app_renders_panels_for_each_match(monkeypatch, fake_cache: Path):
 
     at.sidebar.radio[0].set_value(2)
     at.sidebar.toggle[0].set_value(False)
+    at.sidebar.toggle[1].set_value(False)
     at.run()
     assert not at.exception, at.exception
     assert at.sidebar.slider[0].value == (0.0, 2.8)

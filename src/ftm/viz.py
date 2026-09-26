@@ -71,11 +71,39 @@ def _draw_cells(ax, voronoi_frame: pd.DataFrame) -> None:
             )
 
 
+def _draw_centroid_trace(
+    ax, centroid_trace: pd.DataFrame, *, frame_id: int | None, max_gap_s: float,
+) -> None:
+    missing = {"team", "timestamp", "cx_m", "cy_m"} - set(centroid_trace.columns)
+    if missing:
+        raise ValueError(f"centroid_trace is missing columns: {sorted(missing)}")
+    for team in ("home", "away"):
+        rows = centroid_trace[centroid_trace["team"].astype(str) == team]
+        rows = rows.sort_values("timestamp")
+        if rows.empty:
+            continue
+        x = rows["cx_m"].to_numpy(dtype=float)
+        y = rows["cy_m"].to_numpy(dtype=float)
+        # Shape rows exist only while the ball is alive: break the line at
+        # stoppages instead of drawing a straight jump across them.
+        breaks = np.flatnonzero(np.diff(rows["timestamp"].to_numpy(dtype=float)) > max_gap_s) + 1
+        color = TEAM_COLORS[team]
+        ax.plot(np.insert(x, breaks, np.nan), np.insert(y, breaks, np.nan), color=color,
+                linewidth=1.0, alpha=0.55, zorder=3, label=f"{team} centroid")
+        if frame_id is not None and "frame_id" in rows.columns:
+            now = rows[rows["frame_id"] == frame_id]
+            if not now.empty:
+                ax.scatter(now["cx_m"], now["cy_m"], s=140, marker="X", color=color,
+                           edgecolors="white", linewidth=1.2, zorder=5)
+
+
 def pitch_snapshot(
     players_frame: pd.DataFrame,
     *,
     voronoi_frame: pd.DataFrame | None = None,
+    centroid_trace: pd.DataFrame | None = None,
     title: str | None = None,
+    centroid_max_gap_s: float = 1.0,
 ) -> Figure:
     """Draw player positions for one frame, optional Voronoi overlay.
 
@@ -88,6 +116,11 @@ def pitch_snapshot(
         Optional per-player rows (track_id, team, area_m2, cell_wkt) for the
         same frame; ``cell_wkt`` is a shapely polygon WKT in the same centred
         coordinates. Each cell is shaded by team colour at low alpha.
+    centroid_trace:
+        Optional shape rows (team, timestamp, cx_m, cy_m, optional frame_id)
+        for a time window: each team's centroid path is drawn as a line,
+        broken wherever consecutive rows are more than ``centroid_max_gap_s``
+        apart (stoppages), with an X at this frame's centroid.
     title:
         e.g. "Metrica Game 3 - 62:14 - ball alive".
 
@@ -103,6 +136,11 @@ def pitch_snapshot(
         _draw_cells(ax, voronoi_frame)
 
     players_frame = players_frame.reset_index(drop=True)
+    if centroid_trace is not None and len(centroid_trace):
+        frame_id = (int(players_frame["frame_id"].iloc[0])
+                    if "frame_id" in players_frame.columns and len(players_frame) else None)
+        _draw_centroid_trace(ax, centroid_trace, frame_id=frame_id,
+                             max_gap_s=centroid_max_gap_s)
     is_ball = players_frame["is_ball"].astype(bool)
     players = players_frame[~is_ball]
     has_jersey = "jersey_number" in players_frame.columns
@@ -139,7 +177,7 @@ def pitch_snapshot(
         )
 
     if ax.get_legend_handles_labels()[0]:
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, 0.0), ncol=5, frameon=False,
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, 0.0), ncol=7, frameon=False,
                   fontsize=9)
     if title:
         ax.set_title(title, fontsize=12)

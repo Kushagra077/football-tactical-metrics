@@ -113,6 +113,29 @@ def test_pitch_snapshot_duplicate_index_and_missing_wkt():
         viz.pitch_snapshot(df, voronoi_frame=_voronoi_frame().drop(columns="cell_wkt"))
 
 
+def test_pitch_snapshot_centroid_trace_breaks_at_stoppages_and_marks_frame():
+    trace = _shape_frame(periods=(1,), n=6)
+    trace = trace[~trace["frame_id"].isin([2, 3])]  # 1.5 s stoppage between frames 1 and 4
+    players = _players_frame().assign(frame_id=4)
+    ax = viz.pitch_snapshot(players, centroid_trace=trace).axes[0]
+
+    lines = {ln.get_label(): ln for ln in ax.get_lines()
+             if ln.get_label() in ("home centroid", "away centroid")}
+    assert set(lines) == {"home centroid", "away centroid"}
+    x = lines["home centroid"].get_xdata()
+    assert np.isnan(x).sum() == 1 and len(x) == 5  # 4 rows + 1 break
+    # One X marker per team at frame 4's centroid.
+    markers = [c for c in ax.collections if len(c.get_offsets()) == 1
+               and tuple(c.get_offsets()[0]) in {(-10.0, 0.0), (10.0, 0.0)}]
+    assert len(markers) == 2
+
+
+def test_pitch_snapshot_centroid_trace_rejects_missing_columns():
+    with pytest.raises(ValueError, match="cx_m"):
+        viz.pitch_snapshot(_players_frame(),
+                           centroid_trace=_shape_frame(n=2).drop(columns="cx_m"))
+
+
 def test_time_series_one_axis_per_column_and_no_cross_period_line():
     fig = viz.time_series(_shape_frame(), columns=["line_height_m", "width_m"])
     assert isinstance(fig, Figure)

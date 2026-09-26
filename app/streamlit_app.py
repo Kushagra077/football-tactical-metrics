@@ -18,11 +18,13 @@ Sidebar:
     e.g. "SkillCorner · 1234 · Team A vs Team B"
   * time-window slider — (start_s, end_s) within the selected period
   * period selector (1 / 2)
-  * toggles: Voronoi overlay on/off, which shape series to show
+  * toggles: Voronoi overlay on/off, centroid trace on/off, which shape
+    series to show
 
 Main:
   1. Pitch snapshot at the window midpoint — player positions + Voronoi
-     overlay (``ftm.viz.pitch_snapshot``)
+     overlay + each team's centroid path over the window
+     (``ftm.viz.pitch_snapshot``)
   2. Time series — line height / width / compactness for both teams over
      the window (``ftm.viz.time_series``)
   3. Per-player table — physical metrics with coverage % shown next to
@@ -303,7 +305,7 @@ def _mmss(seconds: float) -> str:
 
 def sidebar_controls(matches: list[dict], cache_dir: Path | None = None) -> dict:
     """Render the sidebar widgets, return the current selection dict
-    (provider, match_id, period, window, show_voronoi, series)."""
+    (provider, match_id, period, window, show_voronoi, show_centroid, series)."""
     cache_dir = Path(cache_dir) if cache_dir is not None else resolve_cache_dir()
     sb = st.sidebar
     sb.header("Match")
@@ -326,6 +328,10 @@ def sidebar_controls(matches: list[dict], cache_dir: Path | None = None) -> dict
 
     sb.header("Display")
     show_voronoi = sb.toggle("Voronoi overlay", value=True, key="show_voronoi")
+    show_centroid = sb.toggle(
+        "Centroid trace", value=True, key="show_centroid",
+        help="Each team's average position over the time window; X = this frame.",
+    )
     series = sb.multiselect(
         "Shape series", list(SHAPE_SERIES), default=DEFAULT_SERIES,
         format_func=SHAPE_SERIES.get, key="series",
@@ -341,6 +347,7 @@ def sidebar_controls(matches: list[dict], cache_dir: Path | None = None) -> dict
         "period": int(period),
         "window": (float(window[0]), float(window[1])),
         "show_voronoi": bool(show_voronoi),
+        "show_centroid": bool(show_centroid),
         "series": list(series),
     }
 
@@ -373,11 +380,18 @@ def render_pitch(selection: dict) -> None:
             st.caption("No Voronoi cells cached for this frame.")
             cells = None
 
+    trace = None
+    if selection.get("show_centroid"):
+        shape = load_tidy(cache_dir, provider, match_id, "shape")
+        if {"cx_m", "cy_m"} <= set(shape.columns):
+            trace = shape[(shape["period"] == period) & (shape["timestamp"] >= start)
+                          & (shape["timestamp"] <= end)]
+
     t = float(frame["timestamp"].iloc[0])
     state = str(frame["ball_state"].iloc[0]) if "ball_state" in frame.columns else ""
     name = PROVIDER_LABELS.get(provider, provider)
     title = f"{name} {match_id} - P{period} {_mmss(t)}" + (f" - ball {state}" if state else "")
-    _show(viz.pitch_snapshot(frame, voronoi_frame=cells, title=title))
+    _show(viz.pitch_snapshot(frame, voronoi_frame=cells, centroid_trace=trace, title=title))
 
 
 def render_time_series(selection: dict) -> None:

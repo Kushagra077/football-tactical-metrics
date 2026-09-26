@@ -22,7 +22,9 @@ metrics code never knows which provider a frame came from.
 *Metrica match 1, first half, 14:15. Each dot is a player (red = home,
 blue = away, square = goalkeeper, open circle = ball). Each shaded cell is the
 part of the pitch closer to that player than to anyone else (a Voronoi
-diagram), so the red area is the space the home team controls at this moment.*
+diagram), so the red area is the space the home team controls at this moment.
+The thin lines trace each team's centroid (average position) over the
+selected 09:30–19:00 window, broken at stoppages; the X marks it at this frame.*
 
 ## 2 · Metrics
 
@@ -34,6 +36,7 @@ nowhere else.
 | Defensive line height | How far up the pitch the defence stands | Mean `x` of the 4 deepest outfield players, in the team's own attacking direction (negative = near own goal) | 4 players |
 | Width / Length | How spread out the team is | `max − min` of outfield `y` / `x` | — |
 | Compactness | How tight the team is | Convex-hull area (m²) of outfield players | — |
+| Centroid | Where the team is, on average | Mean (`x`, `y`) of outfield players; drawn on the pitch as a path over the time window | — |
 | Space control | How much pitch each team "owns" | Voronoi cell area per player, clipped to the 105 × 68 m pitch, goalkeepers included | — |
 | Pressing | How many opponents are closing down the ball | Opponents within 5 m of the ball carrier (carrier = player within 3 m of the ball) | 5 m / 3 m |
 | Distance covered | How far a player ran | Sum of step distances on the smoothed track | Savitzky-Golay window 21 frames (0.84 s at 25 Hz), order 2 |
@@ -101,7 +104,10 @@ What the failures mean:
 - **Top speed (5 fail):** 2 players hit the 12 m/s clip ceiling, which means a
   tracking error survived glitch rejection. 2 are just under 8 m/s. 1 is
   11.2 m/s.
-- **Distance (2 fail):** both are in Metrica 3, at 12.1 and 12.5 km.
+- **Distance (2 fail):** 12.1 and 12.5 km, both box-to-box midfielders in
+  Metrica 3. That match runs faster for everyone (119 m/min against 109 in the
+  other two), even under 5 s of smoothing, so it's real movement, not noise.
+  Raw and smoothed distance differ by only about 1%.
 - **Goalkeeper (1 fail):** 11.97 m/s, almost certainly a tracking slide just
   under the glitch threshold.
 
