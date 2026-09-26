@@ -15,16 +15,10 @@ tracked, not by where the data came from.
 
 ![Dashboard demo](docs/images/dashboard.gif)
 
-
-
-
 https://github.com/user-attachments/assets/b70999f8-c0d7-40f2-ae93-aa92797e5538
 
-
-[![23-second overview: click to play, with sound](docs/images/overview-poster.jpg)](docs/media/overview.mp4)
-
 *▶ 23-second overview (with sound): the headline finding, the dashboard and the
-coverage rule. Click to download the MP4.*
+coverage rule.*
 
 **No hosted demo, on purpose.** The dashboard only views precomputed files;
 there's no model or live computation behind it, so the recording above and the
