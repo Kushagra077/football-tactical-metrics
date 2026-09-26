@@ -38,6 +38,7 @@ Cache dir: ``$FTM_CACHE_DIR`` if set, else ``<repo>/data/cache``.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 from pathlib import Path
@@ -429,13 +430,28 @@ def render_player_table(selection: dict) -> None:
         ))
 
 
-def render_coverage_overview(cache_dir: Path, matches: list[dict]) -> None:
+@st.cache_data(show_spinner=False, max_entries=4)
+def _coverage_png(cache_dir: str, fingerprint: tuple) -> bytes | None:
+    # Independent of every sidebar widget, and the slowest figure (~0.2 s):
+    # render once per cache state, not on every slider drag. The expander
+    # body runs on each rerun even when collapsed.
+    coverage = load_all_coverage(Path(cache_dir), _cached_index(cache_dir, fingerprint))
+    if coverage.empty:
+        return None
+    fig = viz.coverage_bar(coverage)
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=200, bbox_inches="tight")  # st.pyplot's defaults
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def render_coverage_overview(cache_dir: Path) -> None:
     with st.expander("Coverage across all cached matches"):
-        coverage = load_all_coverage(cache_dir, matches)
-        if coverage.empty:
+        png = _coverage_png(str(cache_dir), _meta_fingerprint(cache_dir))
+        if png is None:
             st.info("No coverage data cached.")
             return
-        _show(viz.coverage_bar(coverage))
+        st.image(png, width="stretch")
 
 
 def main() -> None:
@@ -453,7 +469,7 @@ def main() -> None:
     render_pitch(selection)
     render_time_series(selection)
     render_player_table(selection)
-    render_coverage_overview(cache_dir, matches)
+    render_coverage_overview(cache_dir)
 
 
 if __name__ == "__main__":

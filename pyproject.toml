@@ -37,6 +37,8 @@ packages = ["src/ftm"]
 [tool.ruff]
 line-length = 100
 src = ["src", "scripts", "app", "tests"]
+# Exploration scratch, not shipped code; CI lints what the Space runs.
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
