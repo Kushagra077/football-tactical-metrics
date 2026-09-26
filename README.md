@@ -120,12 +120,20 @@ checked for all 7 matches.
 | Team compactness (median hull), Metrica | 300–1500 m² | 6 teams | 6 | — | 862–1032 |
 | Team compactness (median hull), SkillCorner | 300–1500 m² | 8 teams | 8 | — | 364–499 |
 
-The sprint band comes from Collins et al. 2025 (PLoS ONE 20(10): e0334460),
-which uses the same definition as here (above 25.2 km/h for at least 1 s,
-25 Hz optical tracking): 10.3 ± 5.4 sprints per full match, from about 7.6
-for centre-backs to 13.9 for wide midfielders. Studies without a minimum
-duration report about 3 times as many, so they aren't comparable. SkillCorner
-hulls are smaller because players off camera are missing from the shape.
+Where the bands come from (full citations in `validation.json`):
+
+| Band | Source | What it reports |
+|---|---|---|
+| Distance 9–12 km | Collins et al. 2025, *PLoS ONE* 20(10) e0334460 (MLS, 25 Hz optical tracking) | 9.95 ± 0.99 km per full match; centre-backs 9.43, central midfielders 10.51 |
+| Sprints 2–25 | same paper, same sprint definition as here (> 25.2 km/h for ≥ 1 s) | 10.3 ± 5.4 per match; centre-backs 7.6 up to wide midfielders 13.9 |
+| HSR share 5–15% | Gualtieri et al. 2023, *Front. Sports Act. Living* 5:1116293 (systematic review) | about 8–14% of distance above 19.8 km/h |
+| Top speed 8–11 m/s | Silva et al. 2024, *Biology of Sport* 42(1) 193–200 (10 Hz GNSS) | position means 8.1–8.8 m/s (29.1–31.6 km/h) |
+
+The bands are deliberately a little wider than the study averages, because
+individual players vary more than averages do. Studies that count sprints
+without a minimum duration report about 3 times as many, so they aren't
+comparable. SkillCorner hulls are smaller because players off camera are
+missing from the shape.
 
 What the failures mean:
 - **HSR share (12 fail):** most are centre-backs, who run fast less than other
@@ -134,8 +142,10 @@ What the failures mean:
   band comes from Gualtieri et al. 2023, whose study means work out to about
   8–14%.
 - **Top speed (5 fail):** 2 players hit the 12 m/s clip ceiling, which means a
-  tracking error survived glitch rejection. 2 are just under 8 m/s. 1 is
-  11.2 m/s.
+  tracking error survived glitch rejection. 2 are just under 8 m/s (7.92 and
+  7.94); the band's floor is the centre-back average in Silva et al., so a
+  player who never makes a long sprint can land there honestly. 1 is 11.2 m/s,
+  above anything in that study, so it's more likely a tracking artefact.
 - **Distance (2 fail):** 12.1 and 12.5 km, both box-to-box midfielders in
   Metrica 3. That match runs faster for everyone (119 m/min against 109 in the
   other two), even under 5 s of smoothing, so it's real movement, not noise.
@@ -191,7 +201,14 @@ without its threshold can't be compared with another. Full grid:
 
 Coverage is the share of the match's frames in which a player was tracked.
 Metrica tracks the whole pitch, so starters are near 100% and the lower values
-are mostly substitutes. SkillCorner tracks from the TV broadcast, so players
+are mostly substitutes. Metrica 3 is lower overall (62.9%) because it has more
+partial tracks.
+
+**Data quirk (Metrica 3).** Two players sometimes share exactly the same
+coordinates, in runs of up to about 12 s, even across teams. It looks like the
+tracker merged them while one hid the other. The merged players are right next
+to each other, so it moves anyone's distance by at most about 1%. It's noted,
+not corrected: splitting them again would mean inventing positions. SkillCorner tracks from the TV broadcast, so players
 drop out whenever the camera isn't on them:
 
 ![SkillCorner broadcast frame](docs/images/pitch_skillcorner.png)

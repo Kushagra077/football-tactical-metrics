@@ -30,8 +30,21 @@ PROVIDER_COLORS: dict[str, str] = {"metrica": "#2ca02c", "skillcorner": "#9467bd
 _FALLBACK_COLOR = "#7f7f7f"
 
 
+# Above this many bars, per-player tick labels overlap into an unreadable band.
+_MAX_BAR_LABELS = 30
+
+
 def _team_color(team) -> str:
     return TEAM_COLORS.get(str(team), _FALLBACK_COLOR)
+
+
+def _break_at_gaps(t, *series, max_gap_s: float) -> tuple[np.ndarray, ...]:
+    """Insert a NaN wherever consecutive ``t`` values are more than
+    ``max_gap_s`` apart, so matplotlib lifts the pen instead of drawing a
+    straight line across a stoppage. Returns ``(t, *series)`` as floats."""
+    t = np.asarray(t, dtype=float)
+    breaks = np.flatnonzero(np.diff(t) > max_gap_s) + 1
+    return tuple(np.insert(np.asarray(a, dtype=float), breaks, np.nan) for a in (t, *series))
 
 
 def _make_pitch() -> Pitch:
@@ -82,14 +95,13 @@ def _draw_centroid_trace(
         rows = rows.sort_values("timestamp")
         if rows.empty:
             continue
-        x = rows["cx_m"].to_numpy(dtype=float)
-        y = rows["cy_m"].to_numpy(dtype=float)
         # Shape rows exist only while the ball is alive: break the line at
         # stoppages instead of drawing a straight jump across them.
-        breaks = np.flatnonzero(np.diff(rows["timestamp"].to_numpy(dtype=float)) > max_gap_s) + 1
+        _, x, y = _break_at_gaps(rows["timestamp"], rows["cx_m"], rows["cy_m"],
+                                 max_gap_s=max_gap_s)
         color = TEAM_COLORS[team]
-        ax.plot(np.insert(x, breaks, np.nan), np.insert(y, breaks, np.nan), color=color,
-                linewidth=1.0, alpha=0.55, zorder=3, label=f"{team} centroid")
+        ax.plot(x, y, color=color, linewidth=1.0, alpha=0.55, zorder=3,
+                label=f"{team} centroid")
         if frame_id is not None and "frame_id" in rows.columns:
             now = rows[rows["frame_id"] == frame_id]
             if not now.empty:
@@ -201,6 +213,7 @@ def time_series(
     *,
     columns: list[str],
     window: tuple[float, float] | None = None,
+    max_gap_s: float = 1.0,
 ) -> Figure:
     """Line-height / width / compactness over time, both teams.
 
@@ -215,7 +228,10 @@ def time_series(
     ``shape_frame``. With a single period this is just ``timestamp``.
     ``window`` is applied on that x axis. Each (team, period) is drawn as
     its own line, so nothing is connected across a period boundary;
-    boundaries get a dashed vertical rule.
+    boundaries get a dashed vertical rule. Within a period the line is
+    also broken wherever rows are more than ``max_gap_s`` apart: shape
+    metrics exist only while the ball is in play, and a straight line
+    across a stoppage would be invented data.
 
     Returns the ``Figure``.
     """
@@ -242,8 +258,9 @@ def time_series(
         for team in ("home", "away"):
             team_df = df[df["team"].astype(str) == team]
             for i, (_, seg) in enumerate(team_df.groupby("period", sort=True)):
+                t, y = _break_at_gaps(seg["_t"], seg[col], max_gap_s=max_gap_s)
                 ax.plot(
-                    seg["_t"], seg[col], color=TEAM_COLORS[team], linewidth=1.2,
+                    t, y, color=TEAM_COLORS[team], linewidth=1.2,
                     label=team if i == 0 else None,
                 )
         for b in boundaries:
@@ -315,7 +332,9 @@ def coverage_bar(coverage: pd.DataFrame) -> Figure:
 
     ``coverage`` has columns provider, track_id, team, coverage_pct
     (0-100). One subplot per provider (sorted by coverage, descending),
-    bars coloured by team, shared 0-100 y axis. Makes the "broadcast data
+    bars coloured by team, shared 0-100 y axis. Track ids label the bars
+    only while they fit (``_MAX_BAR_LABELS``); beyond that the axis just
+    says how many tracks there are. Makes the "broadcast data
     drops players" point visually for the README coverage section.
     """
     providers = list(dict.fromkeys(coverage["provider"].astype(str)))
@@ -331,11 +350,15 @@ def coverage_bar(coverage: pd.DataFrame) -> Figure:
         )
         x = np.arange(len(sub))
         ax.bar(x, sub["coverage_pct"], color=[_team_color(t) for t in sub["team"]], width=0.8)
-        ax.set_xticks(x, sub["track_id"].astype(str), rotation=90, fontsize=7)
         mean = float(sub["coverage_pct"].mean()) if len(sub) else float("nan")
         ax.axhline(mean, color="#333333", linestyle="--", linewidth=0.8)
         ax.set_title(f"{provider} (mean {mean:.0f}%)")
-        ax.set_xlabel("player (track_id)")
+        if len(sub) <= _MAX_BAR_LABELS:
+            ax.set_xticks(x, sub["track_id"].astype(str), rotation=90, fontsize=7)
+            ax.set_xlabel("player (track_id)")
+        else:
+            ax.set_xticks([])
+            ax.set_xlabel(f"{len(sub)} player tracks, sorted by coverage")
         ax.set_ylim(0, 105)
         ax.grid(axis="y", alpha=0.3)
     axes[0].set_ylabel("frames tracked (%)")

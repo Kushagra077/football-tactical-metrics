@@ -155,6 +155,15 @@ def test_time_series_window_slices():
         assert x.min() >= 2 and x.max() <= 5
 
 
+def test_time_series_breaks_line_at_stoppages():
+    shape = _shape_frame(periods=(1,), n=10)
+    shape = shape[~shape["frame_id"].isin([4, 5, 6])]  # 2 s stoppage, 0.5 s steps elsewhere
+    ax = viz.time_series(shape, columns=["width_m"]).axes[0]
+    home = next(ln for ln in ax.get_lines() if ln.get_label() == "home")
+    x = np.asarray(home.get_xdata(), dtype=float)
+    assert np.isnan(x).sum() == 1 and len(x) == 8  # 7 rows + 1 break
+
+
 def test_time_series_rejects_unknown_column():
     with pytest.raises(KeyError):
         viz.time_series(_shape_frame(), columns=["nope"])
@@ -177,6 +186,16 @@ def test_coverage_bar_one_axis_per_provider():
     assert len(fig.axes) == 2
     heights = [p.get_height() for p in fig.axes[1].patches]
     assert heights == sorted(heights, reverse=True)
+
+
+def test_coverage_bar_drops_track_labels_when_they_cannot_fit():
+    many = pd.DataFrame({"provider": "p", "track_id": [f"t{k}" for k in range(40)],
+                         "team": "home", "coverage_pct": np.linspace(100, 10, 40)})
+    ax = viz.coverage_bar(many).axes[0]
+    assert ax.get_xticks().size == 0
+    assert "40 player tracks" in ax.get_xlabel()
+    few = viz.coverage_bar(_coverage()).axes[0]
+    assert few.get_xticks().size == 6
 
 
 def test_save_figure_writes_png(tmp_path):

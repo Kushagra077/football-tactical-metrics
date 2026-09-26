@@ -96,8 +96,12 @@ FBF_CENTROID_X = -18.4
 REFERENCES = [
     {
         "metrics": ["total_distance_km"],
-        "source": "Bradley, P. S. et al. (2009). High-intensity running in English FA Premier "
-        "League soccer matches. Journal of Sports Sciences, 27(2), 159-168.",
+        "source": "Collins, J. J. et al. (2025). The physical demands of Major League Soccer "
+        "match-play with specific reference to high-intensity activity by position, venue "
+        "and opposition quality. PLoS ONE, 20(10), e0334460. Second Spectrum optical "
+        "tracking (25 Hz), outfield players completing >=85 min: 9.95 +/- 0.99 km per match "
+        "(centre-back 9.43 +/- 0.70 up to central midfielder 10.51 +/- 1.00). The configured "
+        "9-12 km band sits within roughly mean +/- 2 SD across positions.",
     },
     {
         "metrics": ["hsr_share_of_distance_pct"],
@@ -108,12 +112,6 @@ REFERENCES = [
         "total distance, i.e. ~8-14% at >=19.8 km/h as measured here. Those are study "
         "means; the configured per-player band is deliberately wider because individual "
         "players (e.g. central defenders) vary more than averages.",
-    },
-    {
-        "metrics": ["total_distance_km"],
-        "source": "Di Salvo, V. et al. (2007). Performance characteristics according to "
-        "playing position in elite soccer. International Journal of Sports Medicine, "
-        "28(3), 222-227.",
     },
     {
         "metrics": ["sprints_per_match"],
@@ -129,9 +127,14 @@ REFERENCES = [
         "~3x higher counts, so they are not comparable.",
     },
     {
-        "metrics": ["top_speed_mps"],
-        "source": "Standard sports-science ranges for elite match play (peak outfield "
-        "speeds of roughly 8-11 m/s); band as configured in configs/metrics.yaml.",
+        "metrics": ["top_speed_mps", "gk_top_speed_mps"],
+        "source": "Silva, H. et al. (2024). Peak match sprinting speed during soccer matches: "
+        "analysing the pre- and post-peak speed dynamics. Biology of Sport, 42(1), 193-200. "
+        "doi:10.5114/biolsport.2024.136089. 10 Hz GNSS, Brazilian first division, 90 match "
+        "peaks: position means 29.1-31.6 km/h (8.1-8.8 m/s), SD 1.6-2.6 km/h. The configured "
+        "8-11 m/s band's floor sits at the centre-back mean, so a genuinely slow defender "
+        "can fall just below it; the ceiling is well above mean + 2 SD (~10.2 m/s) and "
+        "exists to catch tracking glitches, with 12 m/s the hard clip.",
     },
     {
         "metrics": ["*"],
