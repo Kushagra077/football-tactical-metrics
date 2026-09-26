@@ -18,7 +18,7 @@ tracked, not by where the data came from.
 [![23-second overview: click to play, with sound](docs/images/overview-poster.jpg)](docs/media/overview.mp4)
 
 *▶ 23-second overview (with sound): the headline finding, the dashboard and the
-coverage rule. Click to play.*
+coverage rule. Click to download the MP4.*
 
 **No hosted demo, on purpose.** The dashboard only views precomputed files;
 there's no model or live computation behind it, so the recording above and the
@@ -206,8 +206,11 @@ without its threshold can't be compared with another. Full grid:
 
 Coverage is the share of the match's frames in which a player was tracked.
 Metrica tracks the whole pitch, so starters are near 100% and the lower values
-are mostly substitutes. Metrica 3 is lower overall (62.9%) because it has more
-partial tracks.
+are mostly substitutes. Metrica 3 is lower overall (62.9%) because it has far
+more substitutions (35 tracks): 10 starters subbed off in the second half, 6
+players swapped at half-time and 10 substitutes. Every partial track in it is
+continuous while the player is on the pitch, so the 95% rule is removing
+players who weren't on the pitch, not players the tracker lost.
 
 **Data quirk (Metrica 3).** Two players sometimes share exactly the same
 coordinates, in runs of up to about 12 s, even across teams. It looks like the
