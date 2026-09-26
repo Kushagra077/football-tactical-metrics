@@ -32,6 +32,25 @@ _SOURCE_ROOT = Path(__file__).resolve().parents[3]
 _STALE_PART_S = 3600
 
 
+def drop_off_pitch_samples(long_df: pd.DataFrame) -> pd.DataFrame:
+    """Drop samples further off the pitch than the schema's tolerance.
+
+    Tracking sometimes puts a player several metres past a line for a few
+    frames. Those samples are treated like untracked ones (dropped and
+    counted in the log), never clipped onto the pitch: a clipped position
+    would be a fabricated one.
+    """
+    from ftm.schema import COORD_TOLERANCE_M, PITCH_LENGTH_M, PITCH_WIDTH_M
+
+    off_pitch = (long_df["x_pitch"].abs() > PITCH_LENGTH_M / 2 + COORD_TOLERANCE_M) | (
+        long_df["y_pitch"].abs() > PITCH_WIDTH_M / 2 + COORD_TOLERANCE_M
+    )
+    if off_pitch.any():
+        logger.info("Dropping %d samples beyond the off-pitch tolerance", int(off_pitch.sum()))
+        long_df = long_df[~off_pitch]
+    return long_df
+
+
 def data_root() -> Path:
     """Return the data root.
 

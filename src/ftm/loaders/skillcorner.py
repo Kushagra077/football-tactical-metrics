@@ -45,7 +45,7 @@ from kloppy import skillcorner
 from kloppy.domain import Ground, PositionType
 from kloppy.utils import github_resolve_raw_data_url
 
-from ftm.loaders.base import BaseLoader, MatchMeta
+from ftm.loaders.base import BaseLoader, MatchMeta, drop_off_pitch_samples
 from ftm.schema import coerce, validate
 
 _REPO = "SkillCorner/opendata"
@@ -237,6 +237,9 @@ class SkillCornerLoader(BaseLoader):
         # possession in that frame, else DEAD.
         long_df = wide_to_long(dataset.to_df(), players)
         long_df = keep_detected(long_df, self._detected(match_id))
+        # Broadcast tracking occasionally places a detected player >5 m past a
+        # line (match 2007448); same rule as Metrica: drop, never clip.
+        long_df = drop_off_pitch_samples(long_df)
         return validate(coerce(long_df))
 
     # ----- internals ---------------------------------------------------------

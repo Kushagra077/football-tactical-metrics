@@ -76,11 +76,14 @@ speed still above 12 m/s (43 km/h) is clipped **and counted**:
 | Metrica 2 | 3,105,361 | 1,073 | 4 |
 | Metrica 3 | 3,162,739 | 761 | 5 |
 | SkillCorner 2016236 | 474,009 | 47 | 10 |
+| SkillCorner 2017461 | 454,715 | 12 | 6 |
+| SkillCorner 2010085 | 554,481 | 10 | 2 |
+| SkillCorner 2007448 | 525,902 | 27 | 5 |
 
 ## 3 · Validation
 
 Full results are in [`reports/validation.json`](reports/validation.json).
-**126 of 146 checks pass.** All 23 synthetic checks pass. 20 of the 123
+**168 of 190 checks pass.** All 22 synthetic checks pass. 22 of the 168
 real-data checks fail, and they are reported rather than tuned away.
 
 **Synthetic ground truth.** These are fake trajectories where the right answer
@@ -100,17 +103,29 @@ is known exactly.
 | Unknown provider "track_a", tracked 40% of the time | physical metrics refused | refused | refused |
 | Same match, fully tracked player | distance reported | 50.0 m | 50.0 m |
 
-**Physiological ranges.** These cover players who played the full match
-(present in the first and last frame of every period) across the 3 Metrica
-matches.
+**Physiological ranges.** Player checks cover everyone who played the full
+match (present in the first and last frame of every period) and passes the
+95% coverage rule, which in practice means the 3 Metrica matches. No
+SkillCorner player reaches 95%, so their physical checks are listed as
+excluded in the report, not failed. Compactness is a shape metric, so it's
+checked for all 7 matches.
 
-| Check | Expected band | Players | Pass | Median | Range |
+| Check | Expected band | Checked | Pass | Median | Range |
 |---|---|---:|---:|---:|---|
-| Total distance | 9–12 km | 37 | 35 | 10.27 km | 9.21–12.53 |
-| Top speed (outfield) | 8–11 m/s | 37 | 32 | 9.06 m/s | 7.92–12.00 |
-| HSR share of distance | 5–15% | 37 | 25 | 6.27% | 2.33–11.77 |
-| Top speed (goalkeeper) | ≤ 11 m/s | 6 | 5 | 6.60 m/s | 5.38–11.97 |
-| Team compactness (median hull) | 300–1500 m² | 6 | 6 | 929 m² | 862–1032 |
+| Total distance | 9–12 km | 37 players | 35 | 10.27 km | 9.21–12.53 |
+| Top speed (outfield) | 8–11 m/s | 37 players | 32 | 9.06 m/s | 7.92–12.00 |
+| HSR share of distance | 5–15% | 37 players | 25 | 6.27% | 2.33–11.77 |
+| Sprints per match | 2–25 | 37 players | 35 | 7 | 1–20 |
+| Top speed (goalkeeper) | ≤ 11 m/s | 6 keepers | 5 | 6.60 m/s | 5.38–11.97 |
+| Team compactness (median hull), Metrica | 300–1500 m² | 6 teams | 6 | — | 862–1032 |
+| Team compactness (median hull), SkillCorner | 300–1500 m² | 8 teams | 8 | — | 364–499 |
+
+The sprint band comes from Collins et al. 2025 (PLoS ONE 20(10): e0334460),
+which uses the same definition as here (above 25.2 km/h for at least 1 s,
+25 Hz optical tracking): 10.3 ± 5.4 sprints per full match, from about 7.6
+for centre-backs to 13.9 for wide midfielders. Studies without a minimum
+duration report about 3 times as many, so they aren't comparable. SkillCorner
+hulls are smaller because players off camera are missing from the shape.
 
 What the failures mean:
 - **HSR share (12 fail):** most are centre-backs, who run fast less than other
@@ -125,6 +140,9 @@ What the failures mean:
   Metrica 3. That match runs faster for everyone (119 m/min against 109 in the
   other two), even under 5 s of smoothing, so it's real movement, not noise.
   Raw and smoothed distance differ by only about 1%.
+- **Sprints (2 fail):** two players with a single sprint all match, just under
+  the floor of 2. Both also fail the HSR share check (3.4% and 3.6%), so they
+  look like low-running defensive roles rather than a pipeline fault.
 - **Goalkeeper (1 fail):** 11.97 m/s, almost certainly a tracking slide just
   under the glitch threshold.
 
@@ -142,8 +160,9 @@ What the failures mean:
 *Total sprints in Metrica match 1 (all 28 tracked players) for every
 combination of smoothing window (11–31 frames at 25 Hz, i.e. 0.44–1.24 s) and
 sprint threshold (6.5–8.0 m/s). Every cell is a setting someone could
-reasonably publish. The default (21 frames, 7.0 m/s) gives 192 sprints. The
-grid ranges from 37 to 312, a spread of 143% of the default.*
+reasonably publish. The default (21 frames, 7.0 m/s) gives 192 sprints, or
+10.9 per full-match outfield player, close to the published 10.3 (§3). The
+grid ranges from 37 to 312.*
 
 | What changes | Spread |
 |---|---:|
@@ -160,12 +179,15 @@ without its threshold can't be compared with another. Full grid:
 
 ![Coverage by provider](docs/images/coverage.png)
 
-| Provider | Match | Player tracks | Mean coverage | Tracks ≥ 99% |
-|---|---|---:|---:|---:|
-| Metrica (full-pitch) | 1 | 28 | 78.6% | 16 |
-| Metrica (full-pitch) | 2 | 26 | 84.6% | 18 |
-| Metrica (full-pitch) | 3 | 35 | 62.9% | 9 |
-| SkillCorner (broadcast) | 2016236 | 32 | 40.4% | 0 |
+| Provider | Match | Player tracks | Mean coverage | Best-tracked player | Tracks with physical metrics (≥ 95%) |
+|---|---|---:|---:|---:|---:|
+| Metrica (full-pitch) | 1 | 28 | 78.6% | 100% | 16 |
+| Metrica (full-pitch) | 2 | 26 | 84.6% | 100% | 18 |
+| Metrica (full-pitch) | 3 | 35 | 62.9% | 100% | 9 |
+| SkillCorner (broadcast) | 2016236 | 32 | 40.4% | 80.5% | 0 |
+| SkillCorner (broadcast) | 2017461 | 32 | 42.2% | 78.7% | 0 |
+| SkillCorner (broadcast) | 2010085 | 32 | 43.1% | 82.5% | 0 |
+| SkillCorner (broadcast) | 2007448 | 29 | 48.6% | 80.6% | 0 |
 
 Coverage is the share of the match's frames in which a player was tracked.
 Metrica tracks the whole pitch, so starters are near 100% and the lower values
@@ -179,8 +201,8 @@ exist in this frame.*
 
 **Because of this, no SkillCorner player gets distance, HSR or sprints.** Not
 because the code knows it's SkillCorner, but because no broadcast track
-reaches the 95% coverage rule (§2); the best-tracked player is seen about 80%
-of the time. The dashboard shows "n/a (low coverage)" for them, and for Metrica
+reaches the 95% coverage rule (§2): across 4 matches, the best-tracked
+player is seen 79–83% of the time. The dashboard shows "n/a (low coverage)" for them, and for Metrica
 substitutes, who are below 95% for the same honest reason. Shape, space and
 pressing are still computed for every match.
 
@@ -238,7 +260,9 @@ uv sync --extra dev --extra app
 
 # 1. Download provider data and precompute metrics -> data/cache/*.parquet
 uv run python -m scripts.build_cache --provider metrica                       # 3 matches, ~1-2 min each
-uv run python -m scripts.build_cache --provider skillcorner --match-id 2016236
+for m in 2016236 2017461 2010085 2007448; do
+  uv run python -m scripts.build_cache --provider skillcorner --match-id $m    # ~90 MB download each
+done
 
 # 2. Regenerate reports/validation.json + reports/sensitivity.json
 uv run python -m scripts.validate
@@ -254,10 +278,10 @@ uv run ruff check .
 **The cache.** The dashboard never touches raw data. It reads parquet files
 that `build_cache` writes once, offline. Speeds and physical metrics are
 computed at the native rate (25 Hz for Metrica). Everything else is then
-downsampled to **5 Hz** for the cache, which keeps 4 matches at about 180 MB.
-The cache is not committed, so rebuild it with step 1. Only one of the
-SkillCorner matches is cached, to stay within a few hundred MB. The loader can
-read the others with `--match-id`.
+downsampled to **5 Hz** for the cache, which keeps all 7 matches at about
+250 MB. The cache is not committed, so rebuild it with step 1. 4 of the 20
+SkillCorner open-data matches are used; the loader reads any of the others
+with `--match-id`.
 
 **Project layout**
 

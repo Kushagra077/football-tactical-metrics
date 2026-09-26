@@ -38,8 +38,8 @@ import pandas as pd
 from kloppy import metrica
 from kloppy.domain import Ground, PositionType
 
-from ftm.loaders.base import BaseLoader, MatchMeta
-from ftm.schema import COORD_TOLERANCE_M, PITCH_LENGTH_M, PITCH_WIDTH_M, coerce, validate
+from ftm.loaders.base import BaseLoader, MatchMeta, drop_off_pitch_samples
+from ftm.schema import coerce, validate
 
 logger = logging.getLogger(__name__)
 
@@ -349,13 +349,7 @@ class MetricaLoader(BaseLoader):
         long_df = long_df.dropna(subset=["x_pitch", "y_pitch"])
         # A handful of samples sit beyond the schema's off-pitch tolerance
         # (e.g. Game 3: one player 5.3 m past the touchline for 3 frames).
-        # Treat them like untracked samples rather than clipping positions.
-        off_pitch = (long_df["x_pitch"].abs() > PITCH_LENGTH_M / 2 + COORD_TOLERANCE_M) | (
-            long_df["y_pitch"].abs() > PITCH_WIDTH_M / 2 + COORD_TOLERANCE_M
-        )
-        if off_pitch.any():
-            logger.info("Dropping %d samples beyond the off-pitch tolerance", int(off_pitch.sum()))
-            long_df = long_df[~off_pitch]
+        long_df = drop_off_pitch_samples(long_df)
         if not roles_declared:
             long_df["is_gk"] = self._infer_is_gk(long_df)
 

@@ -354,3 +354,15 @@ def test_metrica_game3_loads_and_validates():
     alive_share = (frames["ball_state"] == "alive").mean()
     assert 0.4 < alive_share < 0.9
 
+
+
+def test_drop_off_pitch_samples_drops_beyond_tolerance_never_clips():
+    from ftm.loaders.base import drop_off_pitch_samples
+
+    df = pd.DataFrame({
+        "x_pitch": [0.0, 57.0, 58.0, -10.0],   # 52.5 + 5 m tolerance = 57.5
+        "y_pitch": [0.0, 0.0, 0.0, -39.5],     # 34 + 5 = 39
+    })
+    out = drop_off_pitch_samples(df)
+    assert out.index.tolist() == [0, 1]
+    assert out["x_pitch"].tolist() == [0.0, 57.0]  # kept rows are untouched

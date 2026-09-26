@@ -1,7 +1,8 @@
 {
-  "generated_at": "2026-09-26T08:07:46+00:00",
-  "config_hash": "79422b2ba096b958",
+  "generated_at": "2026-09-26T10:51:02+00:00",
+  "config_hash": "a70beec07e00f93f",
   "full_match_rule": "outfield players present in the first and last frame of every period; substitutes are not range-checked",
+  "coverage_rule": "physical metrics reported only for tracks with >= 95% coverage",
   "synthetic": [
     {
       "name": "straight_line_5mps_10s",
@@ -164,27 +165,19 @@
       "pass": true
     },
     {
-      "name": "skillcorner_refusal",
-      "metric": "distance_covered_raises",
+      "name": "coverage_rule_track_a_40pct",
+      "metric": "physical_refused",
       "expected": 1.0,
       "actual": 1.0,
       "tol": 0,
       "pass": true
     },
     {
-      "name": "skillcorner_refusal",
-      "metric": "high_speed_running_raises",
-      "expected": 1.0,
-      "actual": 1.0,
-      "tol": 0,
-      "pass": true
-    },
-    {
-      "name": "skillcorner_refusal",
-      "metric": "speed_zones_raises",
-      "expected": 1.0,
-      "actual": 1.0,
-      "tol": 0,
+      "name": "coverage_rule_full_track",
+      "metric": "distance_m",
+      "expected": 50.0,
+      "actual": 50.0,
+      "tol": 1.0,
       "pass": true
     }
   ],
@@ -219,6 +212,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_15",
+      "value": 11.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_16",
       "value": 9.8734,
@@ -243,6 +245,15 @@
       "value": 6.0498,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_16",
+      "value": 9.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -275,6 +286,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_17",
+      "value": 7.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_18",
       "value": 11.2101,
@@ -299,6 +319,15 @@
       "value": 7.424,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_18",
+      "value": 11.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -331,6 +360,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_20",
+      "value": 8.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_21",
       "value": 10.9326,
@@ -359,6 +397,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_21",
+      "value": 8.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_23",
       "value": 10.2647,
@@ -383,6 +430,15 @@
       "value": 8.7911,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "away_23",
+      "value": 18.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -435,6 +491,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_2",
+      "value": 6.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_3",
       "value": 9.5334,
@@ -463,6 +528,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_3",
+      "value": 6.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_4",
       "value": 10.2274,
@@ -487,6 +561,15 @@
       "value": 7.856,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_4",
+      "value": 12.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -519,6 +602,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_5",
+      "value": 18.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_7",
       "value": 10.5892,
@@ -543,6 +635,15 @@
       "value": 5.9489,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_7",
+      "value": 4.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -575,6 +676,15 @@
     },
     {
       "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_8",
+      "value": 20.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_9",
       "value": 10.1029,
@@ -599,6 +709,15 @@
       "value": 11.3081,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "sprints_per_match",
+      "player": "home_9",
+      "value": 14.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -649,6 +768,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_15",
+      "value": 4.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_16",
       "value": 9.3723,
@@ -674,6 +802,15 @@
       "low": 5.0,
       "high": 15.0,
       "pass": false
+    },
+    {
+      "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_16",
+      "value": 3.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
     },
     {
       "match": "metrica/2",
@@ -705,6 +842,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_17",
+      "value": 3.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_18",
       "value": 10.2729,
@@ -729,6 +875,15 @@
       "value": 8.3429,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_18",
+      "value": 11.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -761,6 +916,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_19",
+      "value": 6.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_20",
       "value": 10.7293,
@@ -785,6 +949,15 @@
       "value": 3.5519,
       "low": 5.0,
       "high": 15.0,
+      "pass": false
+    },
+    {
+      "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_20",
+      "value": 1.0,
+      "low": 2,
+      "high": 25,
       "pass": false
     },
     {
@@ -817,6 +990,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_21",
+      "value": 3.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_23",
       "value": 9.5473,
@@ -845,6 +1027,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_23",
+      "value": 9.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_24",
       "value": 9.8033,
@@ -869,6 +1060,15 @@
       "value": 8.7995,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "away_24",
+      "value": 9.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -911,6 +1111,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_1",
+      "value": 3.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "gk_top_speed_mps",
       "player": "home_11",
       "value": 5.3786,
@@ -949,6 +1158,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_2",
+      "value": 2.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_3",
       "value": 9.4453,
@@ -977,6 +1195,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_3",
+      "value": 6.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_5",
       "value": 11.8025,
@@ -1001,6 +1228,15 @@
       "value": 8.8077,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_5",
+      "value": 7.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -1033,6 +1269,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_6",
+      "value": 6.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_7",
       "value": 10.9655,
@@ -1061,6 +1306,15 @@
     },
     {
       "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_7",
+      "value": 8.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_9",
       "value": 9.6663,
@@ -1085,6 +1339,15 @@
       "value": 6.6517,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/2",
+      "metric": "sprints_per_match",
+      "player": "home_9",
+      "value": 7.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -1135,6 +1398,15 @@
     },
     {
       "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3570",
+      "value": 2.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3572",
       "value": 11.2122,
@@ -1159,6 +1431,15 @@
       "value": 6.3023,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3572",
+      "value": 8.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -1191,6 +1472,15 @@
     },
     {
       "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3573",
+      "value": 3.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3577",
       "value": 10.8711,
@@ -1215,6 +1505,15 @@
       "value": 8.1154,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3577",
+      "value": 12.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -1257,6 +1556,15 @@
     },
     {
       "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3587",
+      "value": 5.0,
+      "low": 2,
+      "high": 25,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3589",
       "value": 12.5325,
@@ -1281,6 +1589,15 @@
       "value": 7.7151,
       "low": 5.0,
       "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3589",
+      "value": 6.0,
+      "low": 2,
+      "high": 25,
       "pass": true
     },
     {
@@ -1313,6 +1630,15 @@
     },
     {
       "match": "metrica/3",
+      "metric": "sprints_per_match",
+      "player": "P3591",
+      "value": 1.0,
+      "low": 2,
+      "high": 25,
+      "pass": false
+    },
+    {
+      "match": "metrica/3",
       "metric": "gk_top_speed_mps",
       "player": "P3595",
       "value": 11.9744,
@@ -1338,23 +1664,176 @@
       "low": 300.0,
       "high": 1500.0,
       "pass": true
+    },
+    {
+      "match": "skillcorner/2007448",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 494.3591,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2007448",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 474.1205,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2010085",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 397.3906,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2010085",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 498.7007,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2016236",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 425.745,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2016236",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 410.7338,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2017461",
+      "metric": "team_compactness_median_m2",
+      "player": "away",
+      "value": 363.6693,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
+    },
+    {
+      "match": "skillcorner/2017461",
+      "metric": "team_compactness_median_m2",
+      "player": "home",
+      "value": 448.2848,
+      "low": 300.0,
+      "high": 1500.0,
+      "pass": true
     }
   ],
   "excluded": [
     {
+      "match": "skillcorner/2007448",
+      "metric": "total_distance_km",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2007448",
+      "metric": "top_speed_mps",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2007448",
+      "metric": "hsr_share_of_distance_pct",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2007448",
+      "metric": "sprints_per_match",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2010085",
+      "metric": "total_distance_km",
+      "reason": "5 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 5
+    },
+    {
+      "match": "skillcorner/2010085",
+      "metric": "top_speed_mps",
+      "reason": "5 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 5
+    },
+    {
+      "match": "skillcorner/2010085",
+      "metric": "hsr_share_of_distance_pct",
+      "reason": "5 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 5
+    },
+    {
+      "match": "skillcorner/2010085",
+      "metric": "sprints_per_match",
+      "reason": "5 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 5
+    },
+    {
       "match": "skillcorner/2016236",
       "metric": "total_distance_km",
-      "reason": "physical (distance/HSR/sprints) not reported for provider='skillcorner': broadcast tracking is not comparable to full-pitch optical tracking."
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
     },
     {
       "match": "skillcorner/2016236",
       "metric": "top_speed_mps",
-      "reason": "physical (distance/HSR/sprints) not reported for provider='skillcorner': broadcast tracking is not comparable to full-pitch optical tracking."
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
     },
     {
       "match": "skillcorner/2016236",
       "metric": "hsr_share_of_distance_pct",
-      "reason": "physical (distance/HSR/sprints) not reported for provider='skillcorner': broadcast tracking is not comparable to full-pitch optical tracking."
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2016236",
+      "metric": "sprints_per_match",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2017461",
+      "metric": "total_distance_km",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2017461",
+      "metric": "top_speed_mps",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2017461",
+      "metric": "hsr_share_of_distance_pct",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
+    },
+    {
+      "match": "skillcorner/2017461",
+      "metric": "sprints_per_match",
+      "reason": "3 full-match track(s) below 95% coverage: physical metrics not reported (undercounts)",
+      "n_tracks": 3
     }
   ],
   "not_checked": [],
@@ -1382,10 +1861,31 @@
     },
     {
       "provider": "skillcorner",
+      "match_id": "2007448",
+      "n_players": 29,
+      "mean_coverage_pct": 48.5621,
+      "min_coverage_pct": 0.723
+    },
+    {
+      "provider": "skillcorner",
+      "match_id": "2010085",
+      "n_players": 32,
+      "mean_coverage_pct": 43.0989,
+      "min_coverage_pct": 2.4029
+    },
+    {
+      "provider": "skillcorner",
       "match_id": "2016236",
       "n_players": 32,
       "mean_coverage_pct": 40.3777,
       "min_coverage_pct": 2.7591
+    },
+    {
+      "provider": "skillcorner",
+      "match_id": "2017461",
+      "n_players": 32,
+      "mean_coverage_pct": 42.1548,
+      "min_coverage_pct": 10.3589
     }
   ],
   "references": [
@@ -1409,6 +1909,12 @@
     },
     {
       "metrics": [
+        "sprints_per_match"
+      ],
+      "source": "Collins, J. J. et al. (2025). The physical demands of Major League Soccer match-play with specific reference to high-intensity activity by position, venue and opposition quality. PLoS ONE, 20(10), e0334460. Optical tracking (Second Spectrum, 25 Hz), sprint >25.2 km/h with a 1 s minimum duration - the definition used here; outfield players completing >=80 min: 10.27 +/- 5.40 sprints per match (centre-back 7.56 +/- 3.62 up to wide midfielder 13.92 +/- 5.62). Band = roughly mean +/- 2 SD, upper end from the highest position. Corroborated by Andrzejewski, M. et al. (2013), J Strength Cond Res 27(8), 2134-2140: 11.2 +/- 5.3 sprints per match at >=24 km/h (UEFA Europa League). Studies without a minimum duration report ~3x higher counts, so they are not comparable."
+    },
+    {
+      "metrics": [
         "top_speed_mps"
       ],
       "source": "Standard sports-science ranges for elite match play (peak outfield speeds of roughly 8-11 m/s); band as configured in configs/metrics.yaml."
@@ -1421,9 +1927,9 @@
     }
   ],
   "summary": {
-    "n_checks": 146,
-    "n_pass": 126,
-    "n_fail": 20,
+    "n_checks": 190,
+    "n_pass": 168,
+    "n_fail": 22,
     "synthetic_all_pass": true,
     "physiological_all_pass": false,
     "all_pass": false,
@@ -1488,6 +1994,12 @@
       },
       {
         "match": "metrica/2",
+        "metric": "sprints_per_match",
+        "player": "away_20",
+        "value": 1.0
+      },
+      {
+        "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "away_21",
         "value": 4.0739
@@ -1547,6 +2059,12 @@
         "metric": "hsr_share_of_distance_pct",
         "player": "P3591",
         "value": 3.4168
+      },
+      {
+        "match": "metrica/3",
+        "metric": "sprints_per_match",
+        "player": "P3591",
+        "value": 1.0
       },
       {
         "match": "metrica/3",
