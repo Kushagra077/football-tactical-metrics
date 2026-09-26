@@ -37,10 +37,13 @@ Shape:
 --------------------------------------------------------------------------
 reports/sensitivity.json — how much each metric moves with parameters
 --------------------------------------------------------------------------
-For one Metrica match, the cached (downsampled) tracking is re-run
-through ``add_kinematics`` for every ``savgol_window_frames_grid`` value,
-then ``count_sprints_grid`` over ``sprint_threshold_mps_grid``. Windows
-are in frames at the CACHED rate — the same rate the pipeline smooths at.
+For one Metrica match, the match is RE-LOADED at its native frame rate
+(local raw cache under ``data/raw/``, no network) and run through
+``add_kinematics`` for every ``savgol_window_frames_grid`` value, then
+``count_sprints_grid`` over ``sprint_threshold_mps_grid``. Windows are in
+frames at the NATIVE rate — the same rate the pipeline now smooths at
+(DD-030): sweeping the cached 5 Hz positions would answer a question the
+pipeline no longer asks, since kinematics runs before downsampling.
 Spread is ``sprint_spread_pct`` relative to the mid-grid cell (as the
 heatmap title); the config-default-referenced spread is recorded too.
 
@@ -71,7 +74,8 @@ from tests.conftest import (
 )
 
 from ftm import pipeline, viz
-from ftm.kinematics import KIN_COLUMNS, KinematicsConfig, add_kinematics
+from ftm.kinematics import KinematicsConfig, add_kinematics
+from ftm.loaders import get_loader
 from ftm.metrics import physical, shape, space
 
 # Validation tolerances (not metric thresholds); they mirror tests/test_kinematics.py.
@@ -278,13 +282,22 @@ def _synthetic_kinematics(metrics_cfg: dict) -> list[dict]:
     checks.append(_check(f"straight_line_{hsr_speed:g}mps_10s", "hsr_distance_equals_distance",
                          d, hsr, f"rel {TOL_REL}", _close(hsr, d, rel_tol=TOL_REL)))
 
+    # Clipping is the backstop behind glitch rejection, so test it with
+    # rejection off (with it on, an 18 m/s track is all glitch steps).
     too_fast = kin["max_speed_mps"] * 1.5
     clipped = _kin(straight_line_track(speed_mps=too_fast, duration_s=duration, frame_rate=fr),
-                   metrics_cfg, fr)
+                   metrics_cfg, fr, glitch_speed_mps=math.inf)
     top = float(clipped["speed"].max())
     checks.append(_check(f"straight_line_{too_fast:g}mps_clipped", "top_speed_mps",
                          kin["max_speed_mps"], top, TOL_GEOMETRY,
                          _close(top, kin["max_speed_mps"], abs_tol=TOL_GEOMETRY)))
+
+    spiked = straight_line_track(speed_mps=speed, duration_s=duration, frame_rate=fr)
+    spiked.loc[spiked.index == len(spiked) // 2, "y_pitch"] += 5.0
+    spiked = _kin(spiked, metrics_cfg, fr)
+    top = float(spiked["speed"].max())
+    checks.append(_check(f"straight_line_{speed:g}mps_with_5m_spike", "top_speed_mps",
+                         speed, top, TOL_SPEED_MPS, _close(top, speed, abs_tol=TOL_SPEED_MPS)))
     return checks
 
 
@@ -551,10 +564,6 @@ def write_validation_report(
     return report
 
 
-def _strip_kinematics(df: pd.DataFrame) -> pd.DataFrame:
-    return df.drop(columns=[c for c in KIN_COLUMNS if c in df.columns])
-
-
 def _spread(values: pd.Series, reference: float) -> float | None:
     if not reference:
         return None
@@ -581,9 +590,12 @@ def write_sensitivity_report(
     grid_cfg = phys["sensitivity"]
     windows = [int(w) for w in grid_cfg["savgol_window_frames_grid"]]
     thresholds = [float(t) for t in grid_cfg["sprint_threshold_mps_grid"]]
-    frame_rate = float(_meta(cache_dir, "metrica", mid)["cached_frame_rate_hz"])
+    # Native rate, not the cache rate: the pipeline now smooths BEFORE
+    # downsampling (DD-030), so sweeping the window at the cached 5 Hz
+    # rate would test a knob the pipeline doesn't actually turn anymore.
+    frame_rate = float(_meta(cache_dir, "metrica", mid)["source_frame_rate_hz"])
 
-    base_df = _strip_kinematics(_read(cache_dir, "metrica", mid, "tracking"))
+    base_df = get_loader("metrica").load(mid)
     full = full_match_players(base_df)
     gks = goalkeepers(base_df)
     outfield_full = full - gks

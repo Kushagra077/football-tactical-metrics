@@ -29,7 +29,10 @@ from ftm.metrics.physical import (
 
 _REQUIRED_KEYS: dict[str, list[str]] = {
     "pitch": ["length_m", "width_m"],
-    "kinematics": ["savgol_window_frames", "savgol_polyorder", "max_speed_mps", "max_gap_s"],
+    "kinematics": [
+        "savgol_window_frames", "savgol_polyorder", "max_speed_mps", "max_gap_s",
+        "glitch_speed_mps",
+    ],
     "shape": ["line_height_n_deepest", "min_outfield_players"],
     "physical": [
         "hsr_threshold_mps",
@@ -202,15 +205,27 @@ def run_match(
     1. ``loader = ftm.loaders.get_loader(provider)``.
     2. ``meta = loader.load_meta(match_id)`` ; ``df = loader.load(match_id)``
        (``df`` is already schema-valid).
-    3. ``df = downsample(df, from_hz=meta.frame_rate, to_hz=cfg.target_hz)``.
-    4. Build ``KinematicsConfig`` from the YAML + ``meta.frame_rate``
-       (use the DOWNSAMPLED rate), then
-       ``df, clip = ftm.kinematics.add_kinematics(df, kin_cfg)``.
+    3. Build ``KinematicsConfig`` from the YAML + ``meta.frame_rate`` (the
+       NATIVE rate, not the cache rate -- see below), then
+       ``df_native, clip = ftm.kinematics.add_kinematics(df, kin_cfg)``.
+    4. ``df = downsample(df_native, from_hz=meta.frame_rate, to_hz=cfg.target_hz)``
+       for everything that goes into the per-frame cache and the metrics
+       that don't depend on kinematics (shape/pressing/space).
     5. ``shape.compute_all`` / ``pressing.compute_all`` /
-       (``space.team_space_control`` if ``cfg.include_space``).
-    6. Physical metrics: run them for Metrica; for SkillCorner produce
-       the flagged/empty physical frame and rely on ``coverage_table``.
-    7. ``coverage_table(df)``.
+       (``space.team_space_control`` if ``cfg.include_space``), on the
+       downsampled frame -- none of these read speed/vx/vy/step_dist.
+    6. Physical metrics: run them for Metrica **on ``df_native``**, not
+       the downsampled frame. Smoothing position at 5 Hz (the cache rate)
+       flattens a sub-second sprint peak almost entirely -- a 7-frame
+       Sav-Gol window is 1.4 s of smoothing at 5 Hz, whereas the same
+       window at the source 25 Hz is 0.28 s. Computing kinematics at the
+       native rate and only downsampling the already-smoothed result for
+       storage keeps peak speed / HSR share honest without inflating
+       tracking jitter into fake sprints (see design_decision.md #012/#030).
+       For SkillCorner produce the flagged/empty physical frame and rely
+       on ``coverage_table``.
+    7. ``coverage_table(df)`` on the downsampled frame (coverage is a
+       cache-rate concept -- it feeds the dashboard's per-player table).
     8. Write each tidy frame to ``cfg.cache_dir`` as
        ``<provider>__<match_id>__<name>.parquet``; dump ``meta`` JSON
        including ``clip`` and the resolved config.
@@ -220,13 +235,13 @@ def run_match(
     metrics_cfg = load_config(cfg.metrics_yaml_path)
     loader = get_loader(provider)
     meta = loader.load_meta(match_id)
-    df = loader.load(match_id)
+    raw = loader.load(match_id)
+
+    kin_cfg = KinematicsConfig.from_metrics_cfg(metrics_cfg, meta.frame_rate)
+    df_native, clip = add_kinematics(raw, kin_cfg)
 
     effective_hz = min(cfg.target_hz, meta.frame_rate)
-    df = downsample(df, from_hz=meta.frame_rate, to_hz=effective_hz)
-
-    kin_cfg = KinematicsConfig.from_metrics_cfg(metrics_cfg, effective_hz)
-    df, clip = add_kinematics(df, kin_cfg)
+    df = downsample(df_native, from_hz=meta.frame_rate, to_hz=effective_hz)
 
     shape_df = shape.compute_all(df, metrics_cfg)
     pressing_df = pressing.compute_all(df, metrics_cfg)
@@ -250,16 +265,16 @@ def run_match(
         )
     else:
         physical_cfg = metrics_cfg["physical"]
-        _, per_match_dist = distance_covered(df, provider=provider_key)
+        _, per_match_dist = distance_covered(df_native, provider=provider_key)
         hsr = high_speed_running(
-            df, threshold_mps=physical_cfg["hsr_threshold_mps"], provider=provider_key
+            df_native, threshold_mps=physical_cfg["hsr_threshold_mps"], provider=provider_key
         )
         sprints = detect_sprints(
-            df,
+            df_native,
             threshold_mps=physical_cfg["sprint_threshold_mps"],
             min_duration_s=physical_cfg["sprint_min_duration_s"],
             min_recovery_s=physical_cfg["sprint_min_recovery_s"],
-            frame_rate=effective_hz,
+            frame_rate=meta.frame_rate,
         )
         n_sprints = (
             sprints.groupby(["track_id", "team"], observed=True, sort=True)
@@ -308,6 +323,7 @@ def run_match(
         "target_hz_requested": cfg.target_hz,
         "clip_report": asdict(clip),
         "physical_note": physical_note,
+        "physical_computed_at_hz": meta.frame_rate,
         "include_space": cfg.include_space,
     }
     paths.meta.parent.mkdir(parents=True, exist_ok=True)

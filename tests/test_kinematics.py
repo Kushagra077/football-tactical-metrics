@@ -80,24 +80,32 @@ def test_circular_path_circumference(metrics_cfg):
 def test_dt_comes_from_frame_rate_not_hardcoded(metrics_cfg):
     """Same synthetic path sampled at 10 Hz and at 25 Hz yields the same
     total distance (proves ``dt = 1 / frame_rate`` is honoured, not a
-    hardcoded 0.04)."""
+    hardcoded 0.04). Radius/speed are chosen so the revolution period is
+    long relative to the smoothing window at BOTH rates (DD-030 widened
+    the default window to 21 frames; at 10 Hz that is 2.1 s, large enough
+    relative to a fast lap to bias the two rates apart by more than the
+    old 1% tolerance for its own sake, not because dt is wrong)."""
     dists = {}
     for rate in (10.0, 25.0):
-        df = circular_track(radius_m=9.15, speed_mps=4.0, frame_rate=rate)
+        df = circular_track(radius_m=30.0, speed_mps=2.0, frame_rate=rate)
         kin, _ = add_kinematics(df, _cfg(metrics_cfg, rate))
-        assert kin["speed"].median() == pytest.approx(4.0, rel=0.01)
+        assert kin["speed"].median() == pytest.approx(2.0, rel=0.01)
         dists[rate] = float(total_distance(kin)["distance_m"].sum())
     assert dists[10.0] == pytest.approx(dists[25.0], rel=0.01)
     assert _cfg(metrics_cfg, 10.0).dt == pytest.approx(0.1)
 
 
 def test_impossible_speeds_are_clipped_and_counted(metrics_cfg):
-    """Inject a single-frame 40 m/s jump -> ``speed`` is capped at
-    ``max_speed_mps`` and the returned ``ClipReport.n_clipped`` >= 1."""
+    """With glitch rejection off, a 200 m/s jump -> ``speed`` is capped at
+    ``max_speed_mps`` and ``ClipReport.n_clipped`` >= 1. Clipping is now
+    the backstop behind glitch rejection (which would split the track at
+    this jump first), so the backstop is tested with rejection disabled.
+    200 m/s, not 40: the 21-frame window smooths a one-frame spike far
+    below the ceiling."""
     rate = 25.0
-    cfg = _cfg(metrics_cfg, rate)
+    cfg = dataclasses.replace(_cfg(metrics_cfg, rate), glitch_speed_mps=np.inf)
     df = straight_line_track(speed_mps=5.0, duration_s=10.0, frame_rate=rate)
-    jump_m = 40.0 / rate
+    jump_m = 200.0 / rate
     df.loc[df.index >= 100, "x_pitch"] += jump_m
 
     kin, report = add_kinematics(df, cfg)
@@ -107,6 +115,46 @@ def test_impossible_speeds_are_clipped_and_counted(metrics_cfg):
     assert kin["speed"].max() == pytest.approx(cfg.max_speed_mps)
     assert (kin["step_dist"] <= cfg.max_speed_mps * cfg.dt + 1e-12).all()
     assert np.hypot(kin["vx"], kin["vy"]).to_numpy() == pytest.approx(kin["speed"].to_numpy())
+
+
+def test_single_frame_spike_is_rejected_not_smoothed_in(metrics_cfg):
+    """One frame displaced 5 m sideways (125 m/s in and out) on a 5 m/s
+    run: that frame gets NaN kinematics, the track is split around it, no
+    speed near it exceeds the true 5 m/s, and nothing is clipped."""
+    rate = 25.0
+    cfg = _cfg(metrics_cfg, rate)
+    df = straight_line_track(speed_mps=5.0, duration_s=10.0, frame_rate=rate)
+    df.loc[df.index == 100, "y_pitch"] += 5.0
+
+    kin, report = add_kinematics(df, cfg)
+    assert report.n_glitch_steps == 2
+    assert report.n_glitch_frames == 1
+    assert report.n_clipped == 0
+    assert np.isnan(kin.loc[100, "speed"]) and np.isnan(kin.loc[100, "step_dist"])
+    assert kin["speed"].max() == pytest.approx(5.0, abs=0.01)
+    # Only the two steps into/out of the spike are lost (0.2 m each).
+    assert total_distance(kin)["distance_m"].sum() == pytest.approx(50.0 - 0.4, abs=0.05)
+
+
+def test_tracker_slide_splits_the_track(metrics_cfg):
+    """A player jogging at 3 m/s whose track 'slides' 20 m over 6 frames
+    (~83 m/s per step, the Metrica pattern) and continues from there: the
+    slide contributes no distance and no speed, the 5 intermediate frames
+    are NaN, and speed on both sides stays at the true 3 m/s."""
+    rate = 25.0
+    cfg = _cfg(metrics_cfg, rate)
+    df = straight_line_track(speed_mps=3.0, duration_s=10.0, frame_rate=rate)
+    offset = np.zeros(len(df))
+    offset[100:106] = np.linspace(20.0 / 6, 20.0, 6)
+    offset[106:] = 20.0
+    df["y_pitch"] = df["y_pitch"] + offset
+
+    kin, report = add_kinematics(df, cfg)
+    assert report.n_glitch_steps == 6
+    assert report.n_glitch_frames == 5
+    assert kin.loc[100:104, "speed"].isna().all()
+    assert kin["speed"].max() == pytest.approx(3.0, abs=0.01)
+    assert total_distance(kin)["distance_m"].sum() == pytest.approx(30.0 - 6 * 0.12, abs=0.05)
 
 
 def test_gap_is_not_interpolated_into_a_teleport(metrics_cfg):

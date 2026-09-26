@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-25T01:27:23+00:00",
-  "config_hash": "f774c5c44b89137a",
+  "generated_at": "2026-09-26T06:15:02+00:00",
+  "config_hash": "79422b2ba096b958",
   "full_match_rule": "outfield players present in the first and last frame of every period; substitutes are not range-checked",
   "synthetic": [
     {
@@ -23,15 +23,15 @@
       "name": "noisy_stationary_default_window",
       "metric": "distance_vs_naive_ratio",
       "expected": 0.0,
-      "actual": 0.1319,
+      "actual": 0.029,
       "tol": "< 0.2",
       "pass": true
     },
     {
-      "name": "noisy_stationary_window_15",
+      "name": "noisy_stationary_window_31",
       "metric": "distance_m",
       "expected": 0.0,
-      "actual": 1.042,
+      "actual": 0.3428,
       "tol": 2.0,
       "pass": true
     },
@@ -39,15 +39,15 @@
       "name": "circle_r9.15_one_lap",
       "metric": "distance_m",
       "expected": 57.4911,
-      "actual": 57.4711,
+      "actual": 57.3146,
       "tol": "rel 0.01",
       "pass": true
     },
     {
       "name": "circle_r9.15_one_lap",
       "metric": "speed_zones_sum_equals_distance",
-      "expected": 57.4711,
-      "actual": 57.4711,
+      "expected": 57.3146,
+      "actual": 57.3146,
       "tol": 1e-06,
       "pass": true
     },
@@ -81,6 +81,14 @@
       "expected": 12.0,
       "actual": 12.0,
       "tol": 1e-06,
+      "pass": true
+    },
+    {
+      "name": "straight_line_5mps_with_5m_spike",
+      "metric": "top_speed_mps",
+      "expected": 5.0,
+      "actual": 5.0,
+      "tol": 0.01,
       "pass": true
     },
     {
@@ -185,7 +193,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_15",
-      "value": 9.7233,
+      "value": 9.8046,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -194,7 +202,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "away_15",
-      "value": 8.5701,
+      "value": 8.6203,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -204,7 +212,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_15",
-      "value": 5.2626,
+      "value": 5.4106,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -213,7 +221,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_16",
-      "value": 9.7917,
+      "value": 9.8734,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -222,7 +230,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "away_16",
-      "value": 8.3813,
+      "value": 8.4682,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -232,7 +240,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_16",
-      "value": 5.8339,
+      "value": 6.0498,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -241,7 +249,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_17",
-      "value": 10.8086,
+      "value": 10.8969,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -250,7 +258,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "away_17",
-      "value": 8.3175,
+      "value": 8.641,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -260,7 +268,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_17",
-      "value": 7.0261,
+      "value": 7.227,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -269,7 +277,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "away_18",
-      "value": 11.1351,
+      "value": 11.2101,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -278,166 +286,6 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "away_18",
-      "value": 8.3535,
-      "low": 8.0,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "hsr_share_of_distance_pct",
-      "player": "away_18",
-      "value": 7.0616,
-      "low": 5.0,
-      "high": 15.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "total_distance_km",
-      "player": "away_20",
-      "value": 10.1755,
-      "low": 9.0,
-      "high": 12.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "top_speed_mps",
-      "player": "away_20",
-      "value": 8.1447,
-      "low": 8.0,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "hsr_share_of_distance_pct",
-      "player": "away_20",
-      "value": 7.3201,
-      "low": 5.0,
-      "high": 15.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "total_distance_km",
-      "player": "away_21",
-      "value": 10.8616,
-      "low": 9.0,
-      "high": 12.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "top_speed_mps",
-      "player": "away_21",
-      "value": 8.049,
-      "low": 8.0,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "hsr_share_of_distance_pct",
-      "player": "away_21",
-      "value": 6.3329,
-      "low": 5.0,
-      "high": 15.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "total_distance_km",
-      "player": "away_23",
-      "value": 10.1993,
-      "low": 9.0,
-      "high": 12.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "top_speed_mps",
-      "player": "away_23",
-      "value": 9.1679,
-      "low": 8.0,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "hsr_share_of_distance_pct",
-      "player": "away_23",
-      "value": 8.5305,
-      "low": 5.0,
-      "high": 15.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "gk_top_speed_mps",
-      "player": "away_25",
-      "value": 6.03,
-      "low": null,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "gk_top_speed_mps",
-      "player": "home_11",
-      "value": 6.5657,
-      "low": null,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "total_distance_km",
-      "player": "home_2",
-      "value": 9.7537,
-      "low": 9.0,
-      "high": 12.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "top_speed_mps",
-      "player": "home_2",
-      "value": 9.0482,
-      "low": 8.0,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "hsr_share_of_distance_pct",
-      "player": "home_2",
-      "value": 3.1525,
-      "low": 5.0,
-      "high": 15.0,
-      "pass": false
-    },
-    {
-      "match": "metrica/1",
-      "metric": "total_distance_km",
-      "player": "home_3",
-      "value": 9.4719,
-      "low": 9.0,
-      "high": 12.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/1",
-      "metric": "top_speed_mps",
-      "player": "home_3",
       "value": 12.0,
       "low": 8.0,
       "high": 11.0,
@@ -447,8 +295,168 @@
     {
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
+      "player": "away_18",
+      "value": 7.424,
+      "low": 5.0,
+      "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "total_distance_km",
+      "player": "away_20",
+      "value": 10.2522,
+      "low": 9.0,
+      "high": 12.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "top_speed_mps",
+      "player": "away_20",
+      "value": 8.1833,
+      "low": 8.0,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "hsr_share_of_distance_pct",
+      "player": "away_20",
+      "value": 7.5665,
+      "low": 5.0,
+      "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "total_distance_km",
+      "player": "away_21",
+      "value": 10.9326,
+      "low": 9.0,
+      "high": 12.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "top_speed_mps",
+      "player": "away_21",
+      "value": 8.1741,
+      "low": 8.0,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "hsr_share_of_distance_pct",
+      "player": "away_21",
+      "value": 6.5624,
+      "low": 5.0,
+      "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "total_distance_km",
+      "player": "away_23",
+      "value": 10.2647,
+      "low": 9.0,
+      "high": 12.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "top_speed_mps",
+      "player": "away_23",
+      "value": 9.4323,
+      "low": 8.0,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "hsr_share_of_distance_pct",
+      "player": "away_23",
+      "value": 8.7911,
+      "low": 5.0,
+      "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "gk_top_speed_mps",
+      "player": "away_25",
+      "value": 6.1013,
+      "low": null,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "gk_top_speed_mps",
+      "player": "home_11",
+      "value": 7.1049,
+      "low": null,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "total_distance_km",
+      "player": "home_2",
+      "value": 9.8077,
+      "low": 9.0,
+      "high": 12.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "top_speed_mps",
+      "player": "home_2",
+      "value": 9.2854,
+      "low": 8.0,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "hsr_share_of_distance_pct",
+      "player": "home_2",
+      "value": 3.2353,
+      "low": 5.0,
+      "high": 15.0,
+      "pass": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "total_distance_km",
       "player": "home_3",
-      "value": 3.0682,
+      "value": 9.5334,
+      "low": 9.0,
+      "high": 12.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/1",
+      "metric": "top_speed_mps",
+      "player": "home_3",
+      "value": 9.0764,
+      "low": 8.0,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/1",
+      "metric": "hsr_share_of_distance_pct",
+      "player": "home_3",
+      "value": 3.1359,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -457,7 +465,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_4",
-      "value": 10.1531,
+      "value": 10.2274,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -466,7 +474,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "home_4",
-      "value": 8.4976,
+      "value": 8.7179,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -476,7 +484,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_4",
-      "value": 7.6874,
+      "value": 7.856,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -485,7 +493,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_5",
-      "value": 10.9774,
+      "value": 11.0569,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -494,7 +502,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "home_5",
-      "value": 8.7277,
+      "value": 8.7871,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -504,7 +512,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_5",
-      "value": 9.4085,
+      "value": 9.5746,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -513,7 +521,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_7",
-      "value": 10.5137,
+      "value": 10.5892,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -522,7 +530,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "home_7",
-      "value": 7.8937,
+      "value": 7.9205,
       "low": 8.0,
       "high": 11.0,
       "pass": false,
@@ -532,7 +540,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_7",
-      "value": 5.7658,
+      "value": 5.9489,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -541,7 +549,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_8",
-      "value": 11.0921,
+      "value": 11.1667,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -550,7 +558,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "home_8",
-      "value": 9.5973,
+      "value": 9.9608,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -560,7 +568,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_8",
-      "value": 11.4643,
+      "value": 11.774,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -569,7 +577,7 @@
       "match": "metrica/1",
       "metric": "total_distance_km",
       "player": "home_9",
-      "value": 10.0325,
+      "value": 10.1029,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -578,7 +586,7 @@
       "match": "metrica/1",
       "metric": "top_speed_mps",
       "player": "home_9",
-      "value": 8.407,
+      "value": 9.2816,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -588,7 +596,7 @@
       "match": "metrica/1",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_9",
-      "value": 10.9954,
+      "value": 11.3081,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -615,7 +623,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_15",
-      "value": 9.9598,
+      "value": 9.9569,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -634,16 +642,16 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_15",
-      "value": 5.2273,
+      "value": 4.7656,
       "low": 5.0,
       "high": 15.0,
-      "pass": true
+      "pass": false
     },
     {
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_16",
-      "value": 9.2891,
+      "value": 9.3723,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -652,17 +660,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_16",
-      "value": 7.9973,
+      "value": 8.0745,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
+      "pass": true,
       "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_16",
-      "value": 3.5876,
+      "value": 3.6294,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -671,7 +679,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_17",
-      "value": 9.1309,
+      "value": 9.2059,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -680,17 +688,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_17",
-      "value": 7.9531,
+      "value": 8.0735,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
+      "pass": true,
       "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_17",
-      "value": 3.9157,
+      "value": 4.1126,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -699,7 +707,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_18",
-      "value": 10.1855,
+      "value": 10.2729,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -708,7 +716,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_18",
-      "value": 8.3387,
+      "value": 8.6806,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -718,7 +726,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_18",
-      "value": 8.0704,
+      "value": 8.3429,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -727,7 +735,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_19",
-      "value": 10.9424,
+      "value": 11.0321,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -736,17 +744,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_19",
-      "value": 7.9757,
+      "value": 8.3789,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
+      "pass": true,
       "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_19",
-      "value": 7.122,
+      "value": 7.4468,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -755,7 +763,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_20",
-      "value": 10.6659,
+      "value": 10.7293,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -764,17 +772,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_20",
-      "value": 12.0,
+      "value": 9.0567,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
-      "at_clip_ceiling": true
+      "pass": true,
+      "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_20",
-      "value": 3.5253,
+      "value": 3.5519,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -783,7 +791,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_21",
-      "value": 9.8559,
+      "value": 9.9288,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -792,7 +800,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_21",
-      "value": 10.4995,
+      "value": 8.138,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -802,7 +810,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_21",
-      "value": 3.8995,
+      "value": 4.0739,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -811,7 +819,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_23",
-      "value": 9.4772,
+      "value": 9.5473,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -820,7 +828,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_23",
-      "value": 8.7138,
+      "value": 10.4033,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -830,7 +838,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_23",
-      "value": 7.8764,
+      "value": 8.1584,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -839,7 +847,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "away_24",
-      "value": 9.7314,
+      "value": 9.8033,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -848,7 +856,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "away_24",
-      "value": 9.1009,
+      "value": 10.3535,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -858,7 +866,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "away_24",
-      "value": 8.4126,
+      "value": 8.7995,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -867,7 +875,7 @@
       "match": "metrica/2",
       "metric": "gk_top_speed_mps",
       "player": "away_25",
-      "value": 5.4813,
+      "value": 5.5465,
       "low": null,
       "high": 11.0,
       "pass": true,
@@ -877,7 +885,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_1",
-      "value": 10.1723,
+      "value": 10.2536,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -886,7 +894,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_1",
-      "value": 8.2237,
+      "value": 8.4253,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -896,7 +904,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_1",
-      "value": 5.1591,
+      "value": 5.3861,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -905,7 +913,7 @@
       "match": "metrica/2",
       "metric": "gk_top_speed_mps",
       "player": "home_11",
-      "value": 5.9212,
+      "value": 5.3786,
       "low": null,
       "high": 11.0,
       "pass": true,
@@ -915,7 +923,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_2",
-      "value": 9.6855,
+      "value": 9.7387,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -924,17 +932,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_2",
-      "value": 12.0,
+      "value": 8.9229,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
-      "at_clip_ceiling": true
+      "pass": true,
+      "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_2",
-      "value": 3.0963,
+      "value": 3.0863,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -943,7 +951,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_3",
-      "value": 9.3707,
+      "value": 9.4453,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -952,7 +960,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_3",
-      "value": 8.4935,
+      "value": 8.7387,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -962,7 +970,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_3",
-      "value": 4.6928,
+      "value": 4.8589,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -971,7 +979,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_5",
-      "value": 11.8259,
+      "value": 11.8025,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -980,17 +988,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_5",
-      "value": 12.0,
+      "value": 9.1588,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
-      "at_clip_ceiling": true
+      "pass": true,
+      "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_5",
-      "value": 9.0459,
+      "value": 8.8077,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -999,7 +1007,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_6",
-      "value": 11.3383,
+      "value": 11.4262,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1008,7 +1016,7 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_6",
-      "value": 8.3929,
+      "value": 9.1907,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -1018,7 +1026,7 @@
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_6",
-      "value": 5.9081,
+      "value": 6.1387,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -1027,7 +1035,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_7",
-      "value": 10.9873,
+      "value": 10.9655,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1036,17 +1044,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_7",
-      "value": 12.0,
+      "value": 9.2658,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
-      "at_clip_ceiling": true
+      "pass": true,
+      "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_7",
-      "value": 6.8046,
+      "value": 6.27,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -1055,7 +1063,7 @@
       "match": "metrica/2",
       "metric": "total_distance_km",
       "player": "home_9",
-      "value": 9.616,
+      "value": 9.6663,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1064,17 +1072,17 @@
       "match": "metrica/2",
       "metric": "top_speed_mps",
       "player": "home_9",
-      "value": 12.0,
+      "value": 8.9081,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
-      "at_clip_ceiling": true
+      "pass": true,
+      "at_clip_ceiling": false
     },
     {
       "match": "metrica/2",
       "metric": "hsr_share_of_distance_pct",
       "player": "home_9",
-      "value": 6.4392,
+      "value": 6.6517,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -1101,7 +1109,7 @@
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3570",
-      "value": 10.6214,
+      "value": 10.7163,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1110,17 +1118,17 @@
       "match": "metrica/3",
       "metric": "top_speed_mps",
       "player": "P3570",
-      "value": 7.5655,
+      "value": 9.4006,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
+      "pass": true,
       "at_clip_ceiling": false
     },
     {
       "match": "metrica/3",
       "metric": "hsr_share_of_distance_pct",
       "player": "P3570",
-      "value": 2.2977,
+      "value": 2.3281,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -1129,7 +1137,7 @@
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3572",
-      "value": 11.1213,
+      "value": 11.2122,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1138,35 +1146,7 @@
       "match": "metrica/3",
       "metric": "top_speed_mps",
       "player": "P3572",
-      "value": 10.5854,
-      "low": 8.0,
-      "high": 11.0,
-      "pass": true,
-      "at_clip_ceiling": false
-    },
-    {
-      "match": "metrica/3",
-      "metric": "hsr_share_of_distance_pct",
-      "player": "P3572",
-      "value": 6.0024,
-      "low": 5.0,
-      "high": 15.0,
-      "pass": true
-    },
-    {
-      "match": "metrica/3",
-      "metric": "total_distance_km",
-      "player": "P3573",
-      "value": 12.0261,
-      "low": 9.0,
-      "high": 12.0,
-      "pass": false
-    },
-    {
-      "match": "metrica/3",
-      "metric": "top_speed_mps",
-      "player": "P3573",
-      "value": 7.5191,
+      "value": 11.2238,
       "low": 8.0,
       "high": 11.0,
       "pass": false,
@@ -1175,8 +1155,36 @@
     {
       "match": "metrica/3",
       "metric": "hsr_share_of_distance_pct",
+      "player": "P3572",
+      "value": 6.3023,
+      "low": 5.0,
+      "high": 15.0,
+      "pass": true
+    },
+    {
+      "match": "metrica/3",
+      "metric": "total_distance_km",
       "player": "P3573",
-      "value": 3.1553,
+      "value": 12.1328,
+      "low": 9.0,
+      "high": 12.0,
+      "pass": false
+    },
+    {
+      "match": "metrica/3",
+      "metric": "top_speed_mps",
+      "player": "P3573",
+      "value": 10.4157,
+      "low": 8.0,
+      "high": 11.0,
+      "pass": true,
+      "at_clip_ceiling": false
+    },
+    {
+      "match": "metrica/3",
+      "metric": "hsr_share_of_distance_pct",
+      "player": "P3573",
+      "value": 3.3663,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -1185,7 +1193,7 @@
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3577",
-      "value": 10.778,
+      "value": 10.8711,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1194,7 +1202,7 @@
       "match": "metrica/3",
       "metric": "top_speed_mps",
       "player": "P3577",
-      "value": 9.5408,
+      "value": 10.501,
       "low": 8.0,
       "high": 11.0,
       "pass": true,
@@ -1204,7 +1212,7 @@
       "match": "metrica/3",
       "metric": "hsr_share_of_distance_pct",
       "player": "P3577",
-      "value": 7.9886,
+      "value": 8.1154,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -1213,7 +1221,7 @@
       "match": "metrica/3",
       "metric": "gk_top_speed_mps",
       "player": "P3578",
-      "value": 6.4019,
+      "value": 8.8535,
       "low": null,
       "high": 11.0,
       "pass": true,
@@ -1223,7 +1231,7 @@
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3587",
-      "value": 10.5682,
+      "value": 10.6636,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1232,26 +1240,26 @@
       "match": "metrica/3",
       "metric": "top_speed_mps",
       "player": "P3587",
-      "value": 12.0,
+      "value": 9.8359,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
-      "at_clip_ceiling": true
+      "pass": true,
+      "at_clip_ceiling": false
     },
     {
       "match": "metrica/3",
       "metric": "hsr_share_of_distance_pct",
       "player": "P3587",
-      "value": 4.9306,
+      "value": 5.1708,
       "low": 5.0,
       "high": 15.0,
-      "pass": false
+      "pass": true
     },
     {
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3589",
-      "value": 12.4111,
+      "value": 12.5325,
       "low": 9.0,
       "high": 12.0,
       "pass": false
@@ -1260,7 +1268,7 @@
       "match": "metrica/3",
       "metric": "top_speed_mps",
       "player": "P3589",
-      "value": 7.9228,
+      "value": 7.9409,
       "low": 8.0,
       "high": 11.0,
       "pass": false,
@@ -1270,7 +1278,7 @@
       "match": "metrica/3",
       "metric": "hsr_share_of_distance_pct",
       "player": "P3589",
-      "value": 7.3298,
+      "value": 7.7151,
       "low": 5.0,
       "high": 15.0,
       "pass": true
@@ -1279,7 +1287,7 @@
       "match": "metrica/3",
       "metric": "total_distance_km",
       "player": "P3591",
-      "value": 11.8363,
+      "value": 11.9335,
       "low": 9.0,
       "high": 12.0,
       "pass": true
@@ -1288,17 +1296,17 @@
       "match": "metrica/3",
       "metric": "top_speed_mps",
       "player": "P3591",
-      "value": 7.1567,
+      "value": 9.504,
       "low": 8.0,
       "high": 11.0,
-      "pass": false,
+      "pass": true,
       "at_clip_ceiling": false
     },
     {
       "match": "metrica/3",
       "metric": "hsr_share_of_distance_pct",
       "player": "P3591",
-      "value": 3.2122,
+      "value": 3.4168,
       "low": 5.0,
       "high": 15.0,
       "pass": false
@@ -1307,10 +1315,10 @@
       "match": "metrica/3",
       "metric": "gk_top_speed_mps",
       "player": "P3595",
-      "value": 8.5604,
+      "value": 11.9744,
       "low": null,
       "high": 11.0,
-      "pass": true,
+      "pass": false,
       "at_clip_ceiling": false
     },
     {
@@ -1408,38 +1416,38 @@
     }
   ],
   "summary": {
-    "n_checks": 145,
-    "n_pass": 115,
-    "n_fail": 30,
+    "n_checks": 146,
+    "n_pass": 126,
+    "n_fail": 20,
     "synthetic_all_pass": true,
     "physiological_all_pass": false,
     "all_pass": false,
-    "n_top_speed_at_clip_ceiling": 8,
+    "n_top_speed_at_clip_ceiling": 2,
     "failures": [
       {
         "match": "metrica/1",
-        "metric": "hsr_share_of_distance_pct",
-        "player": "home_2",
-        "value": 3.1525
-      },
-      {
-        "match": "metrica/1",
         "metric": "top_speed_mps",
-        "player": "home_3",
+        "player": "away_18",
         "value": 12.0,
         "at_clip_ceiling": true
       },
       {
         "match": "metrica/1",
         "metric": "hsr_share_of_distance_pct",
+        "player": "home_2",
+        "value": 3.2353
+      },
+      {
+        "match": "metrica/1",
+        "metric": "hsr_share_of_distance_pct",
         "player": "home_3",
-        "value": 3.0682
+        "value": 3.1359
       },
       {
         "match": "metrica/1",
         "metric": "top_speed_mps",
         "player": "home_7",
-        "value": 7.8937,
+        "value": 7.9205,
         "at_clip_ceiling": false
       },
       {
@@ -1451,166 +1459,96 @@
       },
       {
         "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "away_16",
-        "value": 7.9973,
-        "at_clip_ceiling": false
+        "metric": "hsr_share_of_distance_pct",
+        "player": "away_15",
+        "value": 4.7656
       },
       {
         "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "away_16",
-        "value": 3.5876
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "away_17",
-        "value": 7.9531,
-        "at_clip_ceiling": false
+        "value": 3.6294
       },
       {
         "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "away_17",
-        "value": 3.9157
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "away_19",
-        "value": 7.9757,
-        "at_clip_ceiling": false
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "away_20",
-        "value": 12.0,
-        "at_clip_ceiling": true
+        "value": 4.1126
       },
       {
         "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "away_20",
-        "value": 3.5253
+        "value": 3.5519
       },
       {
         "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "away_21",
-        "value": 3.8995
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "home_2",
-        "value": 12.0,
-        "at_clip_ceiling": true
+        "value": 4.0739
       },
       {
         "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "home_2",
-        "value": 3.0963
+        "value": 3.0863
       },
       {
         "match": "metrica/2",
         "metric": "hsr_share_of_distance_pct",
         "player": "home_3",
-        "value": 4.6928
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "home_5",
-        "value": 12.0,
-        "at_clip_ceiling": true
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "home_7",
-        "value": 12.0,
-        "at_clip_ceiling": true
-      },
-      {
-        "match": "metrica/2",
-        "metric": "top_speed_mps",
-        "player": "home_9",
-        "value": 12.0,
-        "at_clip_ceiling": true
-      },
-      {
-        "match": "metrica/3",
-        "metric": "top_speed_mps",
-        "player": "P3570",
-        "value": 7.5655,
-        "at_clip_ceiling": false
+        "value": 4.8589
       },
       {
         "match": "metrica/3",
         "metric": "hsr_share_of_distance_pct",
         "player": "P3570",
-        "value": 2.2977
+        "value": 2.3281
+      },
+      {
+        "match": "metrica/3",
+        "metric": "top_speed_mps",
+        "player": "P3572",
+        "value": 11.2238,
+        "at_clip_ceiling": false
       },
       {
         "match": "metrica/3",
         "metric": "total_distance_km",
         "player": "P3573",
-        "value": 12.0261
-      },
-      {
-        "match": "metrica/3",
-        "metric": "top_speed_mps",
-        "player": "P3573",
-        "value": 7.5191,
-        "at_clip_ceiling": false
+        "value": 12.1328
       },
       {
         "match": "metrica/3",
         "metric": "hsr_share_of_distance_pct",
         "player": "P3573",
-        "value": 3.1553
-      },
-      {
-        "match": "metrica/3",
-        "metric": "top_speed_mps",
-        "player": "P3587",
-        "value": 12.0,
-        "at_clip_ceiling": true
-      },
-      {
-        "match": "metrica/3",
-        "metric": "hsr_share_of_distance_pct",
-        "player": "P3587",
-        "value": 4.9306
+        "value": 3.3663
       },
       {
         "match": "metrica/3",
         "metric": "total_distance_km",
         "player": "P3589",
-        "value": 12.4111
+        "value": 12.5325
       },
       {
         "match": "metrica/3",
         "metric": "top_speed_mps",
         "player": "P3589",
-        "value": 7.9228,
-        "at_clip_ceiling": false
-      },
-      {
-        "match": "metrica/3",
-        "metric": "top_speed_mps",
-        "player": "P3591",
-        "value": 7.1567,
+        "value": 7.9409,
         "at_clip_ceiling": false
       },
       {
         "match": "metrica/3",
         "metric": "hsr_share_of_distance_pct",
         "player": "P3591",
-        "value": 3.2122
+        "value": 3.4168
+      },
+      {
+        "match": "metrica/3",
+        "metric": "gk_top_speed_mps",
+        "player": "P3595",
+        "value": 11.9744,
+        "at_clip_ceiling": false
       }
     ]
   },

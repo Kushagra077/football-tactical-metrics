@@ -12,10 +12,17 @@ pitch:
 
 kinematics:
   # Savitzky-Golay filter applied to position before differencing.
-  savgol_window_frames: 7      # SWEPT — odd int; larger = smoother + more lag
+  # Frames are counted at the match's NATIVE frame rate (pipeline.py runs
+  # kinematics before downsampling for the cache, DD-030/012): 21 frames
+  # at Metrica's 25 Hz is ~0.84s of smoothing. A window sized in frames at
+  # the 5 Hz CACHE rate (the old default, 7 => 1.4s) over-smooths and
+  # flattens sub-second sprint peaks almost entirely.
+  savgol_window_frames: 21     # SWEPT — odd int; larger = smoother + more lag
   savgol_polyorder: 2          # must be < savgol_window_frames
-  max_speed_mps: 12.0          # speeds above this are clipped AND counted
+  max_speed_mps: 12.0          # smoothed speeds above this are clipped AND counted
   max_gap_s: 1.0               # longer absence => treat re-appearance as new sub-track
+  glitch_speed_mps: 12.0       # raw frame-to-frame step faster than this = tracking
+                               # glitch: split the track there, NaN spike/slide frames
 
 shape:
   line_height_n_deepest: 4     # "4 deepest outfield players"
@@ -33,9 +40,11 @@ physical:
     - [4.0, 5.5]     # run
     - [5.5, 7.0]     # high-speed running
     - [7.0, 99.0]    # sprint
-  # Grids the sensitivity sweep iterates over.
+  # Grids the sensitivity sweep iterates over. Window frames are at the
+  # NATIVE rate (see kinematics.savgol_window_frames), same range of
+  # smoothing severity (~0.4s-1.2s at 25 Hz) as the pre-030 5 Hz grid.
   sensitivity:
-    savgol_window_frames_grid: [5, 7, 9, 11, 15]
+    savgol_window_frames_grid: [11, 15, 21, 25, 31]  # 21 = config default, kept in-grid
     sprint_threshold_mps_grid: [6.5, 7.0, 7.5, 8.0]
 
 pressing:

@@ -147,7 +147,8 @@ def test_write_validation_report(cfg, cache_dir, tmp_path):
         assert (tmp_path / "figures" / f"{name}.png").exists()
 
 
-def test_write_sensitivity_report(cfg, cache_dir, tmp_path):
+def test_write_sensitivity_report(cfg, cache_dir, tmp_path, monkeypatch):
+    monkeypatch.setattr(validate, "get_loader", lambda name: _MovingLoader())
     report = validate.write_sensitivity_report(cfg, cache_dir, tmp_path, figures=False)
     grid_cfg = cfg["physical"]["sensitivity"]
     n_cells = len(grid_cfg["savgol_window_frames_grid"]) * len(
@@ -155,7 +156,7 @@ def test_write_sensitivity_report(cfg, cache_dir, tmp_path):
     assert len(report["sprint_count"]) == n_cells
     assert len(report["distance_vs_window"]) == len(grid_cfg["savgol_window_frames_grid"])
     assert report["match"] == "metrica/g1"
-    assert report["frame_rate_hz"] == 5.0
+    assert report["frame_rate_hz"] == FRAME_RATE  # native rate, not the 5 Hz cache rate
 
     grid = pd.DataFrame(report["sprint_count"]).rename(columns={
         "window": "savgol_window_frames", "threshold": "sprint_threshold_mps",
@@ -182,13 +183,15 @@ def test_sensitivity_rejects_uncached_match_id(cfg, cache_dir, tmp_path):
 
 
 def test_sensitivity_survives_no_full_match_players(cfg, cache_dir, tmp_path, monkeypatch):
+    monkeypatch.setattr(validate, "get_loader", lambda name: _MovingLoader())
     monkeypatch.setattr(validate, "full_match_players", lambda df: set())
     report = validate.write_sensitivity_report(cfg, cache_dir, tmp_path, figures=False)
     assert report["headline"]["distance_spread_pct"] is None
     assert all(r["n_players"] == 0 for r in report["distance_vs_window"])
 
 
-def test_main_exit_code_reflects_failures(cache_dir, tmp_path):
+def test_main_exit_code_reflects_failures(cache_dir, tmp_path, monkeypatch):
+    monkeypatch.setattr(validate, "get_loader", lambda name: _MovingLoader())
     code = validate.main(["--config", str(METRICS_YAML), "--cache-dir", str(cache_dir),
                           "--reports-dir", str(tmp_path), "--no-figures"])
     assert code == 1  # the toy match fails the 9-12 km band

@@ -56,6 +56,9 @@ class KinematicsConfig:
     frame_rate            Hz, from the match metadata (not the config file).
     max_gap_s             A track absent for longer than this (seconds)
                           restarts as a fresh sub-track on reappearance.
+    glitch_speed_mps      A raw (unsmoothed) frame-to-frame step implying
+                          more than this is a tracking glitch, not motion:
+                          the track is split there, never smoothed across.
     """
 
     savgol_window_frames: int
@@ -63,6 +66,7 @@ class KinematicsConfig:
     max_speed_mps: float
     frame_rate: float
     max_gap_s: float
+    glitch_speed_mps: float
 
     def __post_init__(self) -> None:
         if self.savgol_window_frames % 2 != 1:
@@ -75,8 +79,8 @@ class KinematicsConfig:
             )
         if self.frame_rate <= 0:
             raise ValueError(f"frame_rate must be positive, got {self.frame_rate}")
-        if self.max_speed_mps <= 0 or self.max_gap_s <= 0:
-            raise ValueError("max_speed_mps and max_gap_s must be positive")
+        if self.max_speed_mps <= 0 or self.max_gap_s <= 0 or self.glitch_speed_mps <= 0:
+            raise ValueError("max_speed_mps, max_gap_s and glitch_speed_mps must be positive")
 
     @classmethod
     def from_metrics_cfg(cls, metrics_cfg: dict[str, Any], frame_rate: float) -> KinematicsConfig:
@@ -88,6 +92,7 @@ class KinematicsConfig:
             max_speed_mps=float(kin["max_speed_mps"]),
             frame_rate=float(frame_rate),
             max_gap_s=float(kin["max_gap_s"]),
+            glitch_speed_mps=float(kin["glitch_speed_mps"]),
         )
 
     @property
@@ -102,12 +107,16 @@ class ClipReport:
 
     ``n_clipped`` and ``fraction`` go in the README per spec step 2
     ("count how many frames you clipped — that count goes in the README").
+    ``n_glitch_steps`` counts impossible raw steps the track was split at;
+    ``n_glitch_frames`` counts frames given NaN kinematics because of them.
     """
 
     n_clipped: int
     n_total: int
     fraction: float
     max_speed_seen_mps: float
+    n_glitch_steps: int = 0
+    n_glitch_frames: int = 0
 
 
 def _uniform_velocity(pos: np.ndarray, cfg: KinematicsConfig) -> np.ndarray:
@@ -177,6 +186,15 @@ def add_kinematics(
     threshold (say > 1 s) — treat reappearance as a fresh sub-track so a
     teleport doesn't become a 40 m "step".
 
+    Glitches: a raw step implying more than ``glitch_speed_mps`` (Metrica
+    has single-frame spikes and ~6-frame tracker "slides" at 15-20 m/s out
+    of a 3 m/s jog) is handled exactly like a long gap — the track is
+    split there, so neither smoothing nor distance crosses it. A frame
+    entered AND left by such steps (a spike, or a mid-slide point) gets
+    NaN kinematics. Clipping at ``max_speed_mps`` stays as the backstop
+    for smoothed overshoot; before glitch rejection it was mostly
+    catching these glitches, which is why the clip count inflated.
+
     Implementation choices (see module docstring for conventions):
 
     * Velocity is ``savgol_filter(..., deriv=1, delta=dt)`` per sub-track;
@@ -208,15 +226,30 @@ def add_kinematics(
     sub["_pos"] = np.flatnonzero(usable)
     sub = sub.sort_values(["track_id", "period", "timestamp"], kind="mergesort")
 
+    n_glitch_steps = 0
+    n_glitch_frames = 0
     for _, grp in sub.groupby(["track_id", "period"], sort=False, observed=True):
         pos_idx = grp["_pos"].to_numpy()
         t = grp["timestamp"].to_numpy(dtype="float64")
         gaps = np.diff(t)
-        breaks = np.flatnonzero(gaps > cfg.max_gap_s) + 1
+        jumps = np.hypot(*np.diff(xy[pos_idx], axis=0).T)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            impossible = (jumps / gaps > cfg.glitch_speed_mps) & (gaps <= cfg.max_gap_s)
+        # A frame both entered and left by an impossible step is a spike /
+        # mid-slide point with no trustworthy position at all.
+        glitch = np.zeros(len(pos_idx), dtype=bool)
+        glitch[1:-1] = impossible[:-1] & impossible[1:]
+        n_glitch_steps += int(impossible.sum())
+        n_glitch_frames += int(glitch.sum())
+
+        breaks = np.flatnonzero((gaps > cfg.max_gap_s) | impossible) + 1
         step_t = np.concatenate([[0.0], gaps])
         step_t[breaks] = 0.0
+        step_t[glitch] = np.nan
         dt_step[pos_idx] = step_t
         for seg in np.split(np.arange(len(pos_idx)), breaks):
+            if len(seg) == 1 and glitch[seg[0]]:
+                continue
             rows = pos_idx[seg]
             vel[rows] = _velocity(t[seg], xy[rows], cfg)
 
@@ -239,7 +272,11 @@ def add_kinematics(
         n_clipped=n_clipped,
         n_total=n_total,
         fraction=n_clipped / n_total if n_total else 0.0,
-        max_speed_seen_mps=float(np.nanmax(raw_speed)) if n_total else 0.0,
+        max_speed_seen_mps=(
+            float(np.nanmax(raw_speed)) if np.isfinite(raw_speed).any() else 0.0
+        ),
+        n_glitch_steps=n_glitch_steps,
+        n_glitch_frames=n_glitch_frames,
     )
     return out, report
 
